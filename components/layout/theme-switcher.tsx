@@ -25,9 +25,9 @@ export function ThemeSwitcher() {
       onCheckedChange={(checked) => {
         setTheme(checked ? "dark" : "light");
       }}
-      className="relative inline-flex h-9 w-16 shrink-0 items-center rounded-full border-2 border-white bg-white p-0.5 shadow-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary-500 data-checked:border-primary-200 data-checked:bg-primary-900 data-disabled:opacity-70"
+      className="relative cursor-pointer inline-flex h-9 w-16 shrink-0 items-center rounded-full border-2 border-primary-400/70 bg-primary-100 p-0.5 shadow-md outline-none ring-1 ring-primary-500/10 transition-colors focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background data-checked:border-primary-200 data-checked:bg-primary-900 data-checked:ring-primary-950/20 data-disabled:opacity-70"
     >
-      <Switch.Thumb className="relative z-10 flex size-7 items-center justify-center rounded-full bg-primary-500 text-natural-25 shadow-sm transition-transform duration-200 ease-out data-checked:translate-x-7 rtl:data-checked:-translate-x-7">
+      <Switch.Thumb className="relative z-10 flex size-7 items-center justify-center rounded-full bg-primary-500 text-white shadow-sm transition-transform duration-200 ease-out data-checked:translate-x-7 rtl:data-checked:-translate-x-7">
         {isDark ? <Moon className="size-3.5" /> : <Sun className="size-3.5" />}
       </Switch.Thumb>
     </Switch.Root>

@@ -21,7 +21,7 @@ type ZoneListProps = {
 
 export function ZoneList({ zone, error, form, onNext }: ZoneListProps) {
   const t = useTranslations("HomePage");
-  const locale = useLocale()
+  const locale = useLocale();
   const dir = getLocaleDirection(locale);
   const [zoneId, setZoneId] = useQueryState(
     "zone",
@@ -104,7 +104,7 @@ export function ZoneList({ zone, error, form, onNext }: ZoneListProps) {
   };
 
   return (
-    <div className="mt-4">
+    <div>
       <p className="max-w-xl text-xs leading-relaxed text-muted-foreground">
         {t("zoneTimeDescription")}
       </p>
@@ -121,11 +121,11 @@ export function ZoneList({ zone, error, form, onNext }: ZoneListProps) {
             </h2>
 
             <p className="max-w-xl text-xs leading-relaxed text-muted-foreground">
-              Select parking time. Use custom to select your own time slot.
+              {t("selectTimeDescription")}
             </p>
 
             <RadioGroup
-            dir={dir}
+              dir={dir}
               value={
                 hours === 1
                   ? "1"
@@ -143,7 +143,7 @@ export function ZoneList({ zone, error, form, onNext }: ZoneListProps) {
                 className="flex w-full cursor-pointer items-center gap-2 rounded-lg border p-4 has-data-[state=checked]:border-primary"
               >
                 <RadioGroupItem value="1" id="1" />
-                <span>1 hour</span>
+                <span>{t("oneHour")}</span>
               </Label>
 
               <Label
@@ -151,7 +151,7 @@ export function ZoneList({ zone, error, form, onNext }: ZoneListProps) {
                 className="flex w-full cursor-pointer items-center gap-2 rounded-lg border p-4 has-data-[state=checked]:border-primary"
               >
                 <RadioGroupItem value="2" id="2" />
-                <span>2 hours</span>
+                <span>{t("twoHours")}</span>
               </Label>
 
               <Label
@@ -167,11 +167,11 @@ export function ZoneList({ zone, error, form, onNext }: ZoneListProps) {
               <div className="mt-2 max-w-full items-center justify-center rounded-lg border p-4 md:max-w-fit">
                 <div className="flex flex-col justify-center gap-1 border-b pb-2">
                   <h3 className="text-center text-sm font-semibold md:text-base">
-                    Select custom time
+                    {t("selectCustomTime")}
                   </h3>
 
                   <p className="text-center text-xs text-muted-foreground md:text-sm">
-                    (Max Time selection: 8H)
+                    {t("maxTimeSelection")}
                   </p>
                 </div>
 
@@ -196,8 +196,6 @@ export function ZoneList({ zone, error, form, onNext }: ZoneListProps) {
                     +
                   </button>
                 </div>
-
-              
               </div>
             ) : null}
 
@@ -211,8 +209,12 @@ export function ZoneList({ zone, error, form, onNext }: ZoneListProps) {
         </div>
       ) : null}
       <div className="w-full mt-4 flex justify-end items-end">
-        <Button className="min-w-28" type="button" onClick={onNext}>
-          Next
+        <Button
+          className="md:w-36 w-full rounded-full"
+          type="button"
+          onClick={onNext}
+        >
+          {t("next")}
         </Button>
       </div>
     </div>

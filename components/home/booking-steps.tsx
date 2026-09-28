@@ -2,11 +2,12 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { useEffect } from "react";
+import { Check } from "lucide-react";
+import { Fragment, useEffect } from "react";
 import { ZoneList } from "@/components/home/zone-list";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   BOOKING_STEPS,
   DEFAULT_BOOKING_STEP,
@@ -88,11 +89,11 @@ export function BookingSteps({ zone, zoneError }: BookingStepsProps) {
 
   const handleNextFromZone = async () => {
     const isValid = await form.trigger(["zone", "hours"]);
-  
+
     if (!isValid) {
       return;
     }
-  
+
     void setStep("2");
   };
 
@@ -108,7 +109,6 @@ export function BookingSteps({ zone, zoneError }: BookingStepsProps) {
     },
 
     onSuccess: (data) => {
-
       if (data.redirect_url) {
         window.location.href = data.redirect_url;
         return;
@@ -143,54 +143,90 @@ export function BookingSteps({ zone, zoneError }: BookingStepsProps) {
       shopper_result_url: `${process.env.NEXT_PUBLIC_API_URL}/${locale}/payment/result`,
     });
   }
+
+  const currentStepNumber = Number(step);
+
   return (
     <>
-      <section className="rounded-2xl bg-card p-5 text-start text-card-foreground shadow-lg sm:p-6">
+      <section className="rounded-2xl  md:p-4 p-0 text-start text-card-foreground md:shadow-lg shadow-none ">
         <Tabs
           dir={dir}
           value={step}
           onValueChange={handleStepChange}
           className="w-full text-start"
         >
-          <TabsList className="w-full gap-4 sm:gap-8">
-            {BOOKING_STEPS.map((value) => {
+          <nav
+            aria-label={t("stepLabel", { number: step })}
+            className="mb-2 flex w-full items-start justify-between gap-1 sm:gap-2"
+          >
+            {BOOKING_STEPS.map((value, index) => {
               const copy = stepCopy[value];
+              const stepNumber = Number(value);
+              const isCompleted = stepNumber < currentStepNumber;
+              const isActive = value === step;
+              const isUpcoming = stepNumber > currentStepNumber;
+              const connectorComplete =
+                index > 0 && stepNumber <= currentStepNumber;
 
               return (
-                <TabsTrigger
-                  key={value}
-                  value={value}
-                   className="pointer-events-none group min-w-0"
-                >
-                  <span className="text-[11px] font-medium text-muted-foreground">
-                    {t("stepLabel", { number: value })}
-                  </span>
-                  <span className="md:text-sm text-[10px] font-extrabold text-foreground">
-                    {t(copy.titleKey)}
-                  </span>
-                  <span
-                    className={cn(
-                      "mt-1 h-1.5 w-full rounded-full bg-natural-500 transition-colors",
-                      "group-data-[state=active]:bg-amber-400",
-                    )}
-                  />
-                </TabsTrigger>
+                <Fragment key={value}>
+                  {index > 0 ? (
+                    <div
+                      className={cn(
+                        "mt-4 h-2 min-w-4 flex-1 rounded-full sm:min-w-8 sm:h-2.5",
+                        connectorComplete ? "bg-primary-400" : "bg-primary-100",
+                      )}
+                      aria-hidden
+                    />
+                  ) : null}
+
+                  <div className="flex min-w-9 shrink-0 flex-col items-center gap-2 sm:min-w-10">
+                    <div
+                      className={cn(
+                        "flex size-9 items-center justify-center rounded-full text-sm font-bold transition-colors sm:size-10 sm:text-base",
+                        isCompleted && "bg-primary-400 text-white",
+                        isActive && "bg-primary-600 text-white",
+                        isUpcoming &&
+                          "border-2 border-primary-200 bg-primary-50 text-primary-400",
+                      )}
+                      aria-current={isActive ? "step" : undefined}
+                    >
+                      {isCompleted ? (
+                        <Check
+                          className="size-5 stroke-3 sm:size-6"
+                          aria-hidden
+                        />
+                      ) : (
+                        value
+                      )}
+                    </div>
+
+                    <span
+                      className={cn(
+                        "max-w-22 text-center text-[11px] font-semibold leading-tight text-muted-foreground sm:max-w-none sm:text-xs",
+                        !isActive && "invisible",
+                      )}
+                    >
+                      {t(copy.titleKey)}
+                    </span>
+                  </div>
+                </Fragment>
               );
             })}
-          </TabsList>
+          </nav>
 
           {BOOKING_STEPS.map((value) => {
             const copy = stepCopy[value];
 
             return (
-              <TabsContent key={value} value={value} className="pt-1">
+              <TabsContent key={value} value={value}>
                 <h2 className="text-lg font-extrabold text-foreground">
                   {t(copy.contentTitleKey)}
                 </h2>
                 <Form {...form}>
                   <form
                     onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-4"
+                    className="space-y-4 "
                     noValidate
                   >
                     {value === "1" ? (

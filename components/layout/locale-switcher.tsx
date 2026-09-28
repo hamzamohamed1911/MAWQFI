@@ -36,7 +36,7 @@ export function LocaleSwitcher() {
       <Menu.Trigger
         disabled={isPending}
         aria-label={t("label")}
-        className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/25 bg-white/15 px-2.5 text-sm font-bold text-natural-25 outline-none backdrop-blur-sm transition-colors hover:bg-white/25 focus-visible:ring-2 focus-visible:ring-white/60 data-popup-open:bg-white/25"
+        className="inline-flex cursor-pointer h-9 items-center gap-2 rounded-lg border border-white/25 bg-white/15 px-2.5 text-sm font-bold text-natural-25 outline-none backdrop-blur-sm transition-colors hover:bg-white/25 focus-visible:ring-2 focus-visible:ring-white/60 data-popup-open:bg-white/25"
       >
         <Image
           src={localeFlags[locale]}
@@ -46,13 +46,16 @@ export function LocaleSwitcher() {
           unoptimized
           className="h-3.5 w-5 rounded-sm object-cover shadow-sm"
         />
-        <span>{t(locale)}</span>
-        <ChevronDown className="size-4 opacity-80" />
+        <span className="text-primary-600">
+          <span className="sm:hidden">{locale}</span>
+          <span className="hidden sm:inline">{t(locale)}</span>
+        </span>
+        <ChevronDown className="size-4 text-primary-600 opacity-80" />
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner className="outline-none" sideOffset={8} align="end">
           <Menu.Popup className="min-w-44 origin-(--transform-origin) rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0">
-            <p className="px-2.5 py-1.5 text-xs font-bold text-muted-foreground">
+            <p className="px-2.5 py-1.5 text-xs font-bold text-primary-400">
               {t("label")}
             </p>
             {routing.locales.map((nextLocale) => {

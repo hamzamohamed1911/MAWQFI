@@ -1,11 +1,11 @@
 {
   "Metadata": {
-    "title": "On Street Parking",
-    "titleTemplate": "%s · On Street Parking",
-    "description": "On-street parking."
+    "title": "MAWQFI PLUS",
+    "titleTemplate": "%s · MAWQFI PLUS",
+    "description": "Parking management system."
   },
   "HomePage": {
-    "title": "On Street Parking",
+    "title": "MAWQFI PLUS",
     "description": "Find and manage on-street parking.",
     "scanTitle": "Scan the parking QR code",
     "scanDescription": "Point your camera at the QR code on the parking sign. We will open that parking zone so you can book a spot.",
@@ -25,6 +25,7 @@
     "searchZones": "Search zones",
     "clearSearch": "Clear search",
     "zonesLoading": "Loading zones…",
+    "loadingZoneWait": "... Please wait, your zone is loading",
     "zonesEmpty": "Zone not found.",
     "zonesError": "Unable to load zone.",
     "hours24": "24 hours",
@@ -47,7 +48,29 @@
     "plate-number": "Plate number",
     "plate-order": "Please make sure to enter the plate number on the same order as on your plate",
     "select-time-slot": "Select time slot",
-    "select": "Select"
+    "select": "Select",
+    "selectTimeDescription": "Select parking time. Use custom to select your own time slot.",
+    "oneHour": "1 hour",
+    "twoHours": "2 hours",
+    "selectCustomTime": "Select custom time",
+    "maxTimeSelection": "(Max time selection: 8H)",
+    "next": "Next",
+    "selectedTime": "Selected time",
+    "duration": "Duration",
+    "hourUnit": "hour",
+    "hoursUnit": "hours",
+    "timeFrom": "From {time}",
+    "timeTo": "To {time}",
+    "cost": "Cost",
+    "hourlyRate": "Hourly rate",
+    "additionalFee": "Additional fee",
+    "total": "Total",
+    "personalDataStepHint": "Enter your personal details to proceed to the last step.",
+    "plateTabSaudi": "Saudi",
+    "plateTabOtherRegions": "Other regions",
+    "back": "Back",
+    "submit": "Submit",
+    "saudiArabiaAlt": "Saudi Arabia"
   },
   "Header": {
     "logoAlt": "On Street Parking",

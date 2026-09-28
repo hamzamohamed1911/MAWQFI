@@ -25,9 +25,9 @@ export function SiteHeader() {
 
   return (
     <header
-      className={`sticky top-0 z-50 border-b border-white/15 transition-all duration-300 ${
+      className={`sticky top-0 z-50 border-b overflow-hidden bg-background/10 backdrop-blur-md border-white/15 transition-all duration-300 ${
         isScrolled
-          ? "bg-background/10 backdrop-blur-md"
+          ? "bg-primary-50 backdrop-blur-md dark:bg-primary-900"
           : "bg-transparent"
       }`}
     >

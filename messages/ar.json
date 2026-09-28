@@ -1,8 +1,8 @@
 {
   "Metadata": {
-    "title": "مواقف على الشارع",
-    "titleTemplate": "%s · مواقف على الشارع",
-    "description": "مواقف السيارات على الشارع."
+    "title": "موقفي",
+    "titleTemplate": "%s · موقفي",
+    "description": "نظام إدارة المواقف."
   },
   "HomePage": {
     "title": "مواقف على الشارع",
@@ -25,6 +25,7 @@
     "searchZones": "ابحث عن منطقة",
     "clearSearch": "مسح البحث",
     "zonesLoading": "جاري تحميل المناطق…",
+    "loadingZoneWait": "... برجاء الإنتظار ، جارٍ تحميل منطقتك",
     "zonesEmpty": "المنطقة غير موجودة.",
     "zonesError": "تعذر تحميل المنطقة.",
     "hours24": "24 ساعة",
@@ -43,12 +44,33 @@
     "validation-phone-invalid": "يرجى إدخال رقم هاتف صحيح.",
     "phone-country-search": "ابحث عن دولة",
     "phone-placeholder": "أدخل رقم هاتفك",
-    "contact-information":"معلومات التواصل",
-    "plate-number":"رقم اللوحة",
-    "plate-order":"يرجى التأكد من إدخال رقم اللوحة بنفس ترتيب لوحتك",
-    "select-time-slot":"اختر الفترة الزمنية",
-    "select": "اختر "
-
+    "contact-information": "معلومات التواصل",
+    "plate-number": "رقم اللوحة",
+    "plate-order": "يرجى التأكد من إدخال رقم اللوحة بنفس ترتيب لوحتك",
+    "select-time-slot": "اختر الفترة الزمنية",
+    "select": "اختر",
+    "selectTimeDescription": "اختر مدة الوقوف. استخدم «مخصص» لتحديد مدة من اختيارك.",
+    "oneHour": "ساعة واحدة",
+    "twoHours": "ساعتان",
+    "selectCustomTime": "اختر مدة مخصصة",
+    "maxTimeSelection": "(الحد الأقصى للمدة: 8 ساعات)",
+    "next": "التالي",
+    "selectedTime": "الوقت المحدد",
+    "duration": "المدة",
+    "hourUnit": "ساعة",
+    "hoursUnit": "ساعات",
+    "timeFrom": "من {time}",
+    "timeTo": "إلى {time}",
+    "cost": "التكلفة",
+    "hourlyRate": "السعر بالساعة",
+    "additionalFee": "رسوم إضافية",
+    "total": "الإجمالي",
+    "personalDataStepHint": "أدخل بياناتك الشخصية للمتابعة إلى الخطوة الأخيرة.",
+    "plateTabSaudi": "سعودي",
+    "plateTabOtherRegions": "مناطق أخرى",
+    "back": "رجوع",
+    "submit": "إرسال",
+    "saudiArabiaAlt": "المملكة العربية السعودية"
   },
   "Header": {
     "logoAlt": "مواقف على الشارع",

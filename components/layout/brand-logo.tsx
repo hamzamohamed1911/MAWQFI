@@ -2,8 +2,8 @@ import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
-export  function BrandLogo() {
-  const t =  useTranslations("Header");
+export function BrandLogo() {
+  const t = useTranslations("Header");
 
   return (
     <Link
@@ -12,13 +12,22 @@ export  function BrandLogo() {
       aria-label={t("home")}
     >
       <Image
-        src="/images/logoWhite.svg"
+        src="/images/logoDark.svg"
         alt={t("logoAlt")}
         width={240}
         height={102}
         priority
         unoptimized
-        className="h-10 w-auto max-w-40 object-contain sm:h-11"
+        className="hidden h-10 w-auto max-w-40 object-contain sm:h-11 dark:block"
+      />
+      <Image
+        src="/images/logo.svg"
+        alt={t("logoAlt")}
+        width={240}
+        height={102}
+        priority
+        unoptimized
+        className="h-10 w-auto max-w-40 object-contain sm:h-11 dark:hidden"
       />
     </Link>
   );
