@@ -28,6 +28,7 @@
     "loadingZoneWait": "... Please wait, your zone is loading",
     "zonesEmpty": "Zone not found.",
     "zonesError": "Unable to load zone.",
+    "activeBookingError": "Unable to check active booking.",
     "hours24": "24 hours",
     "perHour": "/ hour",
     "personalDataTitle": "Personal data",
@@ -54,6 +55,8 @@
     "twoHours": "2 hours",
     "selectCustomTime": "Select custom time",
     "maxTimeSelection": "(Max time selection: 8H)",
+    "decreaseHours": "Decrease hours",
+    "increaseHours": "Increase hours",
     "next": "Next",
     "selectedTime": "Selected time",
     "duration": "Duration",
@@ -70,6 +73,10 @@
     "plateTabOtherRegions": "Other regions",
     "back": "Back",
     "submit": "Submit",
+    "payNow": "Proceed to payment",
+    "paymentSuccess": "Payment completed successfully.",
+    "paymentReference": "Payment reference",
+    "printReceipt": "Print receipt",
     "saudiArabiaAlt": "Saudi Arabia"
   },
   "Header": {

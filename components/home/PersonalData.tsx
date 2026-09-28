@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FormControl,
   FormField,
@@ -17,11 +17,13 @@ import { Input } from "../ui/input";
 import Image from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Button } from "../ui/button";
+import { Loader2 } from "lucide-react";
 
 type PersonalDataProps = {
   form: UseFormReturn<BookingInput>;
   isSubmitting: boolean;
   onBack: () => void;
+  activeBookingError?: string | null;
 };
 
 const PersonalData = ({ form, isSubmitting, onBack }: PersonalDataProps) => {
@@ -33,9 +35,24 @@ const PersonalData = ({ form, isSubmitting, onBack }: PersonalDataProps) => {
 
   const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
 
-  // Plate UI states
   const [numbers, setNumbers] = useState("");
   const [letters, setLetters] = useState("");
+  const plateValue = form.watch("plate");
+
+  useEffect(() => {
+    if (!plateValue) {
+      return;
+    }
+
+    const match = plateValue.match(/^(\d*)([\p{L}]*)$/u);
+    if (!match) {
+      return;
+    }
+
+    setNumbers(match[1] ?? "");
+    setLetters(match[2] ?? "");
+  }, [plateValue]);
+
   return (
     <div className="flex flex-col gap-4">
       <p className="lg:text-lg md:text-base text-sm text-muted-foreground">
@@ -224,6 +241,7 @@ const PersonalData = ({ form, isSubmitting, onBack }: PersonalDataProps) => {
           </FormItem>
         )}
       />
+
       <div className="flex justify-between w-full gap-2 md:flex-row flex-col">
         <Button
           onClick={() => onBack()}
@@ -238,7 +256,11 @@ const PersonalData = ({ form, isSubmitting, onBack }: PersonalDataProps) => {
           className="md:w-36 w-full rounded-full md:order-2 order-1"
           disabled={isSubmitting}
         >
-          {t("submit")}
+          {isSubmitting ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            t("submit")
+          )}
         </Button>
       </div>
     </div>

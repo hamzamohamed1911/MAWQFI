@@ -38,23 +38,22 @@ export async function generateMetadata({
 
 type BookingPageProps = {
   params: Promise<{ locale: string; qr: string }>;
+  searchParams: Promise<{ plate?: string; zone?: string }>;
 };
 
-export default async function BookingPage({ params }: BookingPageProps) {
-  const { locale, qr } = await params;
-
-  if (!hasLocale(routing.locales, locale) || !qr) {
-    notFound();
-  }
-
-  setRequestLocale(locale);
+export default async function BookingPage({
+  params,
+  searchParams,
+}: BookingPageProps) {
+  const { qr } = await params;
+  const { plate, zone: zoneParam } = await searchParams;
 
   return (
     <main className="relative flex flex-1 flex-col px-4  py-8 ">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
         <BackToScan />
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
-          <BookingPanel qrId={qr} />
+          <BookingPanel qrId={qr} plate={plate} zoneId={zoneParam} />
         </div>
       </div>
     </main>

@@ -7,7 +7,9 @@ import { ZoneCard } from "@/components/home/zone-card";
 import type { ParkingZone } from "@/lib/zones";
 import { Label } from "../ui/label";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { Minus, Plus } from "lucide-react";
 import { Button } from "../ui/button";
+import { Slider } from "../ui/slider";
 import { BookingInput } from "@/lib/schemas/booking.schema";
 import { UseFormReturn } from "react-hook-form";
 import { getLocaleDirection } from "@/i18n/routing";
@@ -18,6 +20,9 @@ type ZoneListProps = {
   form: UseFormReturn<BookingInput>;
   onNext: () => void;
 };
+
+const MIN_CUSTOM_HOURS = 3;
+const MAX_HOURS = 8;
 
 export function ZoneList({ zone, error, form, onNext }: ZoneListProps) {
   const t = useTranslations("HomePage");
@@ -71,37 +76,21 @@ export function ZoneList({ zone, error, form, onNext }: ZoneListProps) {
     });
   };
 
-  const increaseHours = () => {
-    const nextHours = (hours ?? 3) + 1;
+  const setHoursValue = (nextHours: number) => {
+    const clamped = Math.min(MAX_HOURS, Math.max(MIN_CUSTOM_HOURS, nextHours));
 
-    if (nextHours > 8) {
-      return;
-    }
+    void setHours(clamped);
 
-    void setHours(nextHours);
-
-    form.setValue("hours", nextHours, {
+    form.setValue("hours", clamped, {
       shouldValidate: true,
       shouldDirty: true,
       shouldTouch: true,
     });
   };
 
-  const decreaseHours = () => {
-    const nextHours = (hours ?? 3) - 1;
-
-    if (nextHours < 1) {
-      return;
-    }
-
-    void setHours(nextHours);
-
-    form.setValue("hours", nextHours, {
-      shouldValidate: true,
-      shouldDirty: true,
-      shouldTouch: true,
-    });
-  };
+  const customHours = hours && hours > 2 ? hours : MIN_CUSTOM_HOURS;
+  const hoursLabel =
+    customHours === 1 ? t("hourUnit") : t("hoursUnit");
 
   return (
     <div>
@@ -164,37 +153,73 @@ export function ZoneList({ zone, error, form, onNext }: ZoneListProps) {
             </RadioGroup>
 
             {hours && hours > 2 ? (
-              <div className="mt-2 max-w-full items-center justify-center rounded-lg border p-4 md:max-w-fit">
-                <div className="flex flex-col justify-center gap-1 border-b pb-2">
-                  <h3 className="text-center text-sm font-semibold md:text-base">
+              <div className="mt-4 w-full max-w-xl rounded-2xl border-2 border-primary-200 bg-primary-50/80 p-5 shadow-sm md:p-6">
+                <div className="space-y-1 border-b border-primary-200/80 pb-4">
+                  <h3 className="text-base font-bold text-primary-800 md:text-lg">
                     {t("selectCustomTime")}
                   </h3>
-
-                  <p className="text-center text-xs text-muted-foreground md:text-sm">
+                  <p className="text-sm text-primary-700/80">
                     {t("maxTimeSelection")}
                   </p>
                 </div>
 
-                <div className="my-2 flex items-center justify-center gap-3">
-                  <button
+                <div className="mt-5 flex items-center gap-4 md:gap-5">
+                  <Button
                     type="button"
-                    onClick={decreaseHours}
-                    className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border bg-primary-500 text-white"
+                    size="icon"
+                    className="size-11 shrink-0 rounded-full bg-primary-500 text-white hover:bg-primary-600 md:size-12"
+                    disabled={customHours <= MIN_CUSTOM_HOURS}
+                    onClick={() => setHoursValue(customHours - 1)}
+                    aria-label={t("decreaseHours")}
                   >
-                    -
-                  </button>
+                    <Minus className="size-5" aria-hidden />
+                  </Button>
 
-                  <span className="min-w-8 text-center font-semibold">
-                    {hours}
-                  </span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-medium text-primary-800 md:text-base">
+                        {t("duration")}
+                      </span>
+                      <span className="rounded-full bg-primary-500 px-4 py-1.5 text-lg font-bold tabular-nums text-primary-foreground md:text-xl">
+                        {customHours} {hoursLabel}
+                      </span>
+                    </div>
 
-                  <button
+                    <Slider
+                      className="w-full"
+                      min={MIN_CUSTOM_HOURS}
+                      max={MAX_HOURS}
+                      step={1}
+                      value={[customHours]}
+                      onValueChange={(values) => {
+                        const next = Array.isArray(values) ? values[0] : values;
+                        if (typeof next === "number") {
+                          setHoursValue(next);
+                        }
+                      }}
+                      aria-label={t("selectCustomTime")}
+                    />
+
+                    <div className="flex justify-between text-sm font-medium text-primary-700/90">
+                      <span>
+                        {MIN_CUSTOM_HOURS} {t("hoursUnit")}
+                      </span>
+                      <span>
+                        {MAX_HOURS} {t("hoursUnit")}
+                      </span>
+                    </div>
+                  </div>
+
+                  <Button
                     type="button"
-                    onClick={increaseHours}
-                    className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border bg-primary-500 text-white"
+                    size="icon"
+                    className="size-11 shrink-0 rounded-full bg-primary-500 text-white hover:bg-primary-600 md:size-12"
+                    disabled={customHours >= MAX_HOURS}
+                    onClick={() => setHoursValue(customHours + 1)}
+                    aria-label={t("increaseHours")}
                   >
-                    +
-                  </button>
+                    <Plus className="size-5" aria-hidden />
+                  </Button>
                 </div>
               </div>
             ) : null}

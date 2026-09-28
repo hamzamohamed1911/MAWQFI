@@ -1,6 +1,11 @@
 import type { ParkingZone } from "@/lib/zones";
 import { BookingInput } from "../schemas/booking.schema";
-
+import type {
+  ActivateBookingErrorResponse,
+  ActivateBookingResponse,
+  BookingQuoteResponse,
+  ConfirmBookingResponse,
+} from "@/lib/types/zone";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function fetchZone(qrId: string) {
@@ -15,14 +20,6 @@ export async function fetchZone(qrId: string) {
 
   return data;
 }
-type BookingQuoteResponse = {
-  id?: number;
-  total?: number;
-  detail?: string;
-  [key: string]: unknown;
-  redirect_url?:string;
-  shopper_result_url:string;
-};
 export async function submitBooking(
   bookingBody: BookingInput,
 ): Promise<BookingQuoteResponse> {
@@ -38,4 +35,53 @@ export async function submitBooking(
   }
 
   return data;
+}
+export async function confirmBooking(
+  checkout_id: string,
+): Promise<ConfirmBookingResponse> {
+  const response = await fetch(`${API_URL}/public/bookings/confirm/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ checkout_id }),
+  });
+  const data = (await response.json()) as ConfirmBookingResponse;
+
+  if (!response.ok) {
+    throw data;
+  }
+
+  return data;
+}
+export async function fetchBooking(bookingId: string) {
+  const response = await fetch(`${API_URL}/public/bookings/${bookingId}`, {
+    cache: "no-store",
+  });
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw data;
+  }
+
+  return data;
+}
+export async function activateBooking(params: {
+  zone: number;
+  plate: string;
+}): Promise<ActivateBookingResponse> {
+  const search = new URLSearchParams({
+    zone: String(params.zone),
+    plate: params.plate,
+  });
+  const response = await fetch(`${API_URL}/public/bookings/active/?${search}`, {
+    cache: "no-store",
+  });
+  const data = (await response.json()) as
+    | ActivateBookingResponse
+    | ActivateBookingErrorResponse;
+
+  if (!response.ok) {
+    throw data;
+  }
+
+  return data as ActivateBookingResponse;
 }

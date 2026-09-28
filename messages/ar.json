@@ -28,6 +28,7 @@
     "loadingZoneWait": "... برجاء الإنتظار ، جارٍ تحميل منطقتك",
     "zonesEmpty": "المنطقة غير موجودة.",
     "zonesError": "تعذر تحميل المنطقة.",
+    "activeBookingError": "تعذر التحقق من الحجز النشط.",
     "hours24": "24 ساعة",
     "perHour": "/ الساعة",
     "personalDataTitle": "البيانات الشخصية",
@@ -54,6 +55,8 @@
     "twoHours": "ساعتان",
     "selectCustomTime": "اختر مدة مخصصة",
     "maxTimeSelection": "(الحد الأقصى للمدة: 8 ساعات)",
+    "decreaseHours": "تقليل الساعات",
+    "increaseHours": "زيادة الساعات",
     "next": "التالي",
     "selectedTime": "الوقت المحدد",
     "duration": "المدة",
@@ -70,6 +73,10 @@
     "plateTabOtherRegions": "مناطق أخرى",
     "back": "رجوع",
     "submit": "إرسال",
+    "payNow": "متابعة الدفع",
+    "paymentSuccess": "تم الدفع بنجاح.",
+    "paymentReference": "مرجع الدفع",
+    "printReceipt": "طباعة الإيصال",
     "saudiArabiaAlt": "المملكة العربية السعودية"
   },
   "Header": {

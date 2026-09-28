@@ -1,9 +1,14 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { parseAsStringLiteral, useQueryState } from "nuqs";
+import {
+  parseAsInteger,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryState,
+} from "nuqs";
 import { Check } from "lucide-react";
-import { Fragment, useEffect } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { ZoneList } from "@/components/home/zone-list";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -13,6 +18,7 @@ import {
   DEFAULT_BOOKING_STEP,
   type BookingStep,
 } from "@/lib/booking-steps";
+import { useRouter } from "@/i18n/navigation";
 import { getLocaleDirection } from "@/i18n/routing";
 import type { ParkingZone } from "@/lib/zones";
 import { cn } from "@/lib/utils/cn";
@@ -26,8 +32,14 @@ import {
   BookingInput,
   createBookingSchema,
 } from "@/lib/schemas/booking.schema";
-import { submitBooking } from "@/lib/api/zones";
+import { confirmBooking, submitBooking } from "@/lib/api/zones";
+import type {
+  ActivateBookingResponse,
+  BookingQuoteResponse,
+  ConfirmBookingResponse,
+} from "@/lib/types/zone";
 import { BookingSummary } from "./booking-summary";
+import { PaymentStep } from "./payment-step";
 
 const stepCopy = {
   "1": {
@@ -50,12 +62,32 @@ const stepCopy = {
 type BookingStepsProps = {
   zone: ParkingZone | null;
   zoneError?: string | null;
+  activeBooking?: ActivateBookingResponse | null;
+  activeBookingError?: string | null;
 };
 
-export function BookingSteps({ zone, zoneError }: BookingStepsProps) {
+export function BookingSteps({
+  zone,
+  zoneError,
+  activeBooking,
+  activeBookingError,
+}: BookingStepsProps) {
   const t = useTranslations("HomePage");
   const locale = useLocale();
+  const router = useRouter();
   const dir = getLocaleDirection(locale);
+  const [zoneParam] = useQueryState(
+    "zone",
+    parseAsInteger.withOptions({ history: "replace" }),
+  );
+  const [plateParam, setPlateParam] = useQueryState(
+    "plate",
+    parseAsString.withOptions({ history: "push", shallow: false }),
+  );
+  const [checkoutResult, setCheckoutResult] =
+    useState<BookingQuoteResponse | null>(null);
+  const [confirmResult, setConfirmResult] =
+    useState<ConfirmBookingResponse | null>(null);
   const [step, setStep] = useQueryState(
     "step",
     parseAsStringLiteral(BOOKING_STEPS)
@@ -87,6 +119,20 @@ export function BookingSteps({ zone, zoneError }: BookingStepsProps) {
     defaultValues: bookingDefaultValues,
   });
 
+  useEffect(() => {
+    const trimmed = plateParam?.trim();
+    if (trimmed) {
+      form.setValue("plate", trimmed);
+    }
+  }, [plateParam, form]);
+
+  useEffect(() => {
+    const resolvedZoneId = zoneParam ?? zone?.id;
+    if (resolvedZoneId && resolvedZoneId > 0) {
+      form.setValue("zone", resolvedZoneId);
+    }
+  }, [zoneParam, zone, form]);
+
   const handleNextFromZone = async () => {
     const isValid = await form.trigger(["zone", "hours"]);
 
@@ -102,17 +148,27 @@ export function BookingSteps({ zone, zoneError }: BookingStepsProps) {
   };
 
   const registerMutation = useMutation({
-    mutationFn: submitBooking,
+    mutationFn: async (values: BookingInput) => {
+      const checkout = await submitBooking(values);
+      const checkoutId = checkout.checkout_id?.trim();
+
+      if (!checkoutId) {
+        return { checkout, confirmed: null };
+      }
+
+      const confirmed = await confirmBooking(checkoutId);
+      return { checkout, confirmed };
+    },
 
     onMutate: () => {
       form.clearErrors();
     },
 
-    onSuccess: (data) => {
-      if (data.redirect_url) {
-        window.location.href = data.redirect_url;
-        return;
-      }
+    onSuccess: ({ checkout, confirmed }) => {
+      setCheckoutResult(checkout);
+      setConfirmResult(confirmed);
+      void setStep("3");
+      router.refresh();
     },
 
     onError: (error) => {
@@ -135,9 +191,11 @@ export function BookingSteps({ zone, zoneError }: BookingStepsProps) {
     },
   });
 
-  const isSubmitting = registerMutation.isPending;
+  const isSubmitting =
+    registerMutation.isPending || form.formState.isSubmitting;
 
-  function onSubmit(values: BookingInput) {
+  async function onSubmit(values: BookingInput) {
+    await setPlateParam(values.plate.trim());
     registerMutation.mutate({
       ...values,
       shopper_result_url: `${process.env.NEXT_PUBLIC_API_URL}/${locale}/payment/result`,
@@ -223,28 +281,37 @@ export function BookingSteps({ zone, zoneError }: BookingStepsProps) {
                 <h2 className="text-lg font-extrabold text-foreground">
                   {t(copy.contentTitleKey)}
                 </h2>
-                <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-4 "
-                    noValidate
-                  >
-                    {value === "1" ? (
-                      <ZoneList
-                        onNext={handleNextFromZone}
-                        form={form}
-                        zone={zone}
-                        error={zoneError}
-                      />
-                    ) : (
-                      <PersonalData
-                        onBack={handleBackToZone}
-                        isSubmitting={isSubmitting}
-                        form={form}
-                      />
-                    )}
-                  </form>
-                </Form>
+                {value === "3" ? (
+                  <PaymentStep
+                    activeBooking={activeBooking?.booking ?? null}
+                    checkoutResult={checkoutResult}
+                    confirmResult={confirmResult}
+                    activeBookingError={activeBookingError}
+                  />
+                ) : (
+                  <Form {...form}>
+                    <form
+                      onSubmit={form.handleSubmit(onSubmit)}
+                      className="space-y-4 "
+                      noValidate
+                    >
+                      {value === "1" ? (
+                        <ZoneList
+                          onNext={handleNextFromZone}
+                          form={form}
+                          zone={zone}
+                          error={zoneError}
+                        />
+                      ) : (
+                        <PersonalData
+                          onBack={handleBackToZone}
+                          isSubmitting={isSubmitting}
+                          form={form}
+                        />
+                      )}
+                    </form>
+                  </Form>
+                )}
               </TabsContent>
             );
           })}
