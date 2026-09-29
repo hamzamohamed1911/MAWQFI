@@ -37,17 +37,34 @@ export type ParsedCheckoutErrors = {
   fieldErrors: Partial<Record<keyof BookingInput, string>>;
 };
 
-/** Parses DRF-style bodies such as `{ hours: ["…"] }` or `{ detail: "…" }`. */
-export function parseCheckoutError(error: unknown): ParsedCheckoutErrors {
-  if (typeof error === "string" && error.length > 0) {
-    return { messages: [error], fieldErrors: {} };
+function unwrapCheckoutError(error: unknown): unknown {
+  if (error instanceof Error && error.message) {
+    try {
+      const parsed: unknown = JSON.parse(error.message);
+      if (parsed && typeof parsed === "object") {
+        return parsed;
+      }
+    } catch {
+      return error.message;
+    }
   }
 
-  if (!error || typeof error !== "object") {
+  return error;
+}
+
+/** Parses DRF-style bodies such as `{ hours: ["…"] }` or `{ detail: "…" }`. */
+export function parseCheckoutError(error: unknown): ParsedCheckoutErrors {
+  const unwrapped = unwrapCheckoutError(error);
+
+  if (typeof unwrapped === "string" && unwrapped.length > 0) {
+    return { messages: [unwrapped], fieldErrors: {} };
+  }
+
+  if (!unwrapped || typeof unwrapped !== "object") {
     return { messages: [], fieldErrors: {} };
   }
 
-  const record = error as Record<string, unknown>;
+  const record = unwrapped as Record<string, unknown>;
   const messages: string[] = [];
   const fieldErrors: Partial<Record<keyof BookingInput, string>> = {};
 

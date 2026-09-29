@@ -226,15 +226,24 @@ export function BookingSteps({
 
   const registerMutation = useMutation({
     mutationFn: async (values: BookingInput) => {
-      const checkout = await submitBooking(values);
+      const checkoutResult = await submitBooking(values);
+      if (!checkoutResult.ok) {
+        throw checkoutResult.error;
+      }
+
+      const checkout = checkoutResult.data;
       const checkoutId = checkout.checkout_id?.trim();
 
       if (!checkoutId) {
         return { checkout, confirmed: null };
       }
 
-      const confirmed = await confirmBooking(checkoutId);
-      return { checkout, confirmed };
+      const confirmResult = await confirmBooking(checkoutId);
+      if (!confirmResult.ok) {
+        throw confirmResult.error;
+      }
+
+      return { checkout, confirmed: confirmResult.data };
     },
 
     onMutate: () => {

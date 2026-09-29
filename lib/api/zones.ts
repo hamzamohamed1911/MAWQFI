@@ -2,6 +2,12 @@
 
 import type { ParkingZone } from "@/lib/zones";
 import { BookingInput } from "../schemas/booking.schema";
+import {
+  apiFailure,
+  apiSuccess,
+  type ApiActionResult,
+  type ApiErrorBody,
+} from "@/lib/api/action-result";
 import type {
   ActivateBookingErrorResponse,
   ActivateBookingResponse,
@@ -26,36 +32,36 @@ export async function fetchZone(qrId: string) {
 
 export async function submitBooking(
   bookingBody: BookingInput,
-): Promise<BookingQuoteResponse> {
+): Promise<ApiActionResult<BookingQuoteResponse>> {
   const response = await fetch(`${API_URL}/public/bookings/checkout/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(bookingBody),
   });
-  const data = await response.json();
+  const data = (await response.json()) as BookingQuoteResponse & ApiErrorBody;
 
   if (!response.ok) {
-    throw data;
+    return apiFailure(data);
   }
 
-  return data;
+  return apiSuccess(data);
 }
 
 export async function confirmBooking(
   checkout_id: string,
-): Promise<ConfirmBookingResponse> {
+): Promise<ApiActionResult<ConfirmBookingResponse>> {
   const response = await fetch(`${API_URL}/public/bookings/confirm/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ checkout_id }),
   });
-  const data = (await response.json()) as ConfirmBookingResponse;
+  const data = (await response.json()) as ConfirmBookingResponse & ApiErrorBody;
 
   if (!response.ok) {
-    throw data;
+    return apiFailure(data);
   }
 
-  return data;
+  return apiSuccess(data);
 }
 
 export async function activateBooking(params: {
