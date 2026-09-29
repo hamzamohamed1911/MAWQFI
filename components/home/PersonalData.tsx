@@ -1,9 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { parseAsString, useQueryState } from "nuqs";
-import { getActivateBookingErrorMessage } from "@/lib/api/booking-errors";
-import { activateBooking, resolveActiveBooking } from "@/lib/api/zones";
 import {
   FormControl,
   FormField,
@@ -20,32 +17,18 @@ import { Input } from "../ui/input";
 import Image from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Button } from "../ui/button";
-import { AlertTriangle, Loader2 } from "lucide-react";
-import { ActiveBookingCountdown } from "@/components/home/active-booking-countdown";
-import { Alert } from "@/components/ui/alert";
-import type { ActiveBooking } from "@/lib/types/zone";
+import { Loader2 } from "lucide-react";
 
 type PersonalDataProps = {
   form: UseFormReturn<BookingInput>;
   isSubmitting: boolean;
-  onBack: () => void;
-  initialActiveBooking?: ActiveBooking | null;
-  initialActiveBookingError?: string | null;
-  onActiveBookingChange?: (
-    booking: ActiveBooking | null,
-    error: string | null,
-  ) => void;
-  checkoutError?: string | null;
+  onContinue: () => void | Promise<void>;
 };
 
 const PersonalData = ({
   form,
   isSubmitting,
-  onBack,
-  initialActiveBooking,
-  initialActiveBookingError,
-  onActiveBookingChange,
-  checkoutError,
+  onContinue,
 }: PersonalDataProps) => {
   type Country = CountryCode;
 
@@ -54,64 +37,12 @@ const PersonalData = ({
   const t = useTranslations("HomePage");
 
   const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
+  const [isContinuing, setIsContinuing] = useState(false);
 
   const [numbers, setNumbers] = useState("");
   const [letters, setLetters] = useState("");
   const plateValue = form.watch("plate");
-  const zoneId = form.watch("zone");
-  const [plateParam] = useQueryState(
-    "plate",
-    parseAsString.withOptions({ history: "push", shallow: false }),
-  );
-  const [activeBooking, setActiveBooking] = useState<ActiveBooking | null>(
-    initialActiveBooking ?? null,
-  );
-  const [activeBookingError, setActiveBookingError] = useState<string | null>(
-    initialActiveBookingError ?? null,
-  );
-
-  useEffect(() => {
-    const plateFromParams = plateParam?.trim();
-
-    if (!plateFromParams) {
-      setActiveBooking(null);
-      setActiveBookingError(null);
-      onActiveBookingChange?.(null, null);
-      return;
-    }
-
-    if (!zoneId) {
-      return;
-    }
-
-    let cancelled = false;
-
-    void activateBooking({ zone: zoneId, plate: plateFromParams }).then(
-      (response) => {
-        if (cancelled) {
-          return;
-        }
-        const resolved = resolveActiveBooking(response);
-        setActiveBooking(resolved);
-        setActiveBookingError(null);
-        onActiveBookingChange?.(resolved, null);
-      },
-      (error) => {
-        if (cancelled) {
-          return;
-        }
-        const message =
-          getActivateBookingErrorMessage(error) ?? t("activeBookingError");
-        setActiveBooking(null);
-        setActiveBookingError(message);
-        onActiveBookingChange?.(null, message);
-      },
-    );
-
-    return () => {
-      cancelled = true;
-    };
-  }, [plateParam, zoneId, onActiveBookingChange, t]);
+  const continueDisabled = isSubmitting || isContinuing;
 
   useEffect(() => {
     if (!plateValue) {
@@ -127,36 +58,21 @@ const PersonalData = ({
     setLetters(match[2] ?? "");
   }, [plateValue]);
 
+  async function handleContinue() {
+    setIsContinuing(true);
+    try {
+      await onContinue();
+    } finally {
+      setIsContinuing(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <p className="lg:text-lg md:text-base text-sm text-muted-foreground">
         {t("personalDataStepHint")}
       </p>
 
-      {checkoutError ? (
-        <Alert variant="destructive">{checkoutError}</Alert>
-      ) : null}
-
-      {activeBookingError ? (
-        <Alert variant="destructive">{activeBookingError}</Alert>
-      ) : null}
-
-      {activeBooking && !activeBookingError ? (
-        <Alert
-          variant="warning"
-          icon={
-            <AlertTriangle className="size-5 text-amber-600 dark:text-amber-400" />
-          }
-          title={t("activeBookingNoticeTitle")}
-        >
-          <div className="space-y-3">
-            <p>{t("activeBookingNotice")}</p>
-            <ActiveBookingCountdown expiresAt={activeBooking.expires_at} />
-          </div>
-        </Alert>
-      ) : null}
-
-      {/* Phone */}
       <FormField
         control={form.control}
         name="phone"
@@ -183,7 +99,7 @@ const PersonalData = ({
                   });
                 }}
                 onPhoneNumberChange={field.onChange}
-                disabled={isSubmitting}
+                disabled={continueDisabled}
                 placeholder={t("phone-placeholder")}
               />
             </FormControl>
@@ -228,11 +144,11 @@ const PersonalData = ({
 
                 <TabsContent value="saudi">
                   <FormControl>
-                    <div className="flex w-fit overflow-hidden rounded-xl border-2 border-black">
+                    <div className="flex w-fit overflow-hidden rounded-xl border-2 border-black dark:border-white">
                       {/* Main plate */}
                       <div className="grid md:w-90 w-full grid-cols-2 grid-rows-2">
                         {/* Numbers Input */}
-                        <div className="flex items-center justify-center border-b-2 border-r-2 border-black">
+                        <div className="flex items-center justify-center border-b-2 border-r-2 border-black dark:border-white">
                           <Input
                             value={numbers}
                             onChange={(e) => {
@@ -248,13 +164,13 @@ const PersonalData = ({
                             inputMode="numeric"
                             maxLength={4}
                             placeholder="...."
-                            disabled={isSubmitting}
+                            disabled={continueDisabled}
                             className="h-full w-full border-0 text-center lg:text-2xl md:text-xl text-lg shadow-none focus-visible:ring-0"
                           />
                         </div>
 
                         {/* Letters Input */}
-                        <div className="flex items-center justify-center border-b-2 border-black">
+                        <div className="flex items-center justify-center border-b-2 border-black dark:border-white">
                           <Input
                             value={letters}
                             onChange={(e) => {
@@ -271,13 +187,13 @@ const PersonalData = ({
                             }}
                             maxLength={3}
                             placeholder="A A A"
-                            disabled={isSubmitting}
+                            disabled={continueDisabled}
                             className="h-full w-full border-0 text-center lg:text-2xl md:text-xl text-lg shadow-none focus-visible:ring-0"
                           />
                         </div>
 
                         {/* Numbers Result */}
-                        <div className="flex items-center justify-center border-r-2 border-black lg:text-2xl md:text-xl text-lg text-gray-300">
+                        <div className="flex items-center justify-center border-r-2 border-black dark:border-white lg:text-2xl md:text-xl text-lg text-gray-300">
                           {numbers || "0000"}
                         </div>
 
@@ -288,7 +204,7 @@ const PersonalData = ({
                       </div>
 
                       {/* Saudi Section */}
-                      <div className="flex w-13.75 flex-col items-center justify-center gap-1 border-l-2 border-black py-2">
+                      <div className="flex w-13.75 flex-col items-center justify-center gap-1 border-l-2 border-black dark:border-white py-2">
                         <Image
                           alt={t("saudiArabiaAlt")}
                           width={25}
@@ -312,8 +228,6 @@ const PersonalData = ({
                 </TabsContent>
 
                 <TabsContent value="other-regions">
-                  {/* Other regions content */}
-
                   <FormField
                     control={form.control}
                     name="plate"
@@ -323,7 +237,7 @@ const PersonalData = ({
                           <Input
                             {...field}
                             placeholder={t("plate-number")}
-                            disabled={isSubmitting}
+                            disabled={continueDisabled}
                             className="h-12 w-full rounded-xl ring-primary md:max-w-72"
                           />
                         </FormControl>
@@ -339,24 +253,17 @@ const PersonalData = ({
         )}
       />
 
-      <div className="flex justify-between w-full gap-2 md:flex-row flex-col">
+      <div className="flex w-full justify-end">
         <Button
-          onClick={() => onBack()}
-          className="text-primary border-primary border-2 font-semibold md:order-1 order-2 md:w-36 w-full rounded-full hover:text-primary "
-          variant="outline"
           type="button"
+          className="w-full rounded-full md:w-36"
+          disabled={continueDisabled}
+          onClick={() => void handleContinue()}
         >
-          {t("back")}
-        </Button>
-        <Button
-          type="submit"
-          className="md:w-36 w-full rounded-full md:order-2 order-1"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
+          {continueDisabled ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
-            t("submit")
+            t("next")
           )}
         </Button>
       </div>

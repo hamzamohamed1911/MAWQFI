@@ -45,8 +45,14 @@ export default async function BookingPage({
   params,
   searchParams,
 }: BookingPageProps) {
-  const { qr } = await params;
+  const { locale, qr } = await params;
   const { plate, zone: zoneParam } = await searchParams;
+
+  if (!hasLocale(routing.locales, locale)) {
+    notFound();
+  }
+
+  setRequestLocale(locale);
 
   return (
     <main className="relative flex flex-1 flex-col px-4  py-8 ">

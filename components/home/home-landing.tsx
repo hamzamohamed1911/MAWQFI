@@ -7,12 +7,12 @@ import { cn } from "@/lib/utils/cn";
 
 const STEPS = [
   { icon: QrCode, titleKey: "landingStep1Title", descKey: "landingStep1Desc" },
-  { icon: Clock, titleKey: "landingStep2Title", descKey: "landingStep2Desc" },
   {
     icon: UserRound,
-    titleKey: "landingStep3Title",
-    descKey: "landingStep3Desc",
+    titleKey: "landingStep2Title",
+    descKey: "landingStep2Desc",
   },
+  { icon: Clock, titleKey: "landingStep3Title", descKey: "landingStep3Desc" },
   {
     icon: CreditCard,
     titleKey: "landingStep4Title",

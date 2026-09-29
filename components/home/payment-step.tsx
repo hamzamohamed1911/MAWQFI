@@ -1,8 +1,9 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { CheckCircle2, Loader2, Printer } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, Printer } from "lucide-react";
 import { useState } from "react";
+import { ActiveBookingCountdown } from "@/components/home/active-booking-countdown";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { downloadBookingBill } from "@/lib/api/zones";
@@ -78,6 +79,11 @@ export function PaymentStep({
 
   return (
     <div className="flex flex-col gap-4">
+      {printError ? (
+        <p className="text-sm font-medium text-destructive" role="alert">
+          {printError}
+        </p>
+      ) : null}
       {activeBookingError ? (
         <Alert variant="destructive">{activeBookingError}</Alert>
       ) : null}
@@ -92,13 +98,22 @@ export function PaymentStep({
           {t("paymentSuccess")}
         </p>
       </div>
+      {activeBooking && !activeBookingError ? (
+        <Alert
+          variant="warning"
+          className="my-4"
+          icon={
+            <AlertTriangle className="size-5 text-amber-600 dark:text-amber-400" />
+          }
+          title={t("activeBookingNoticeTitle")}
+        >
+          <div className="space-y-3">
+            <p>{t("activeBookingNotice")}</p>
 
-      {printError ? (
-        <p className="text-sm font-medium text-destructive" role="alert">
-          {printError}
-        </p>
+            <ActiveBookingCountdown expiresAt={activeBooking.expires_at} />
+          </div>
+        </Alert>
       ) : null}
-
       <div className="flex w-full flex-col justify-between gap-2 md:flex-row">
         <Button
           type="button"

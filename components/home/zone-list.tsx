@@ -12,19 +12,36 @@ import {
   MIN_CUSTOM_HOURS,
   MAX_CUSTOM_HOURS,
 } from "@/components/home/custom-time-picker";
+import { ActiveBookingCountdown } from "@/components/home/active-booking-countdown";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "../ui/button";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { BookingInput } from "@/lib/schemas/booking.schema";
 import { UseFormReturn } from "react-hook-form";
 import { getLocaleDirection } from "@/i18n/routing";
+import type { ActiveBooking } from "@/lib/types/zone";
 
 type ZoneListProps = {
   zone: ParkingZone | null;
   error?: string | null;
+  checkoutError?: string | null;
   form: UseFormReturn<BookingInput>;
-  onNext: () => void;
+  isSubmitting?: boolean;
+  activeBooking?: ActiveBooking | null;
+  activeBookingError?: string | null;
+  onBack: () => void;
 };
 
-export function ZoneList({ zone, error, form, onNext }: ZoneListProps) {
+export function ZoneList({
+  zone,
+  error,
+  checkoutError,
+  form,
+  isSubmitting = false,
+  activeBooking,
+  activeBookingError,
+  onBack,
+}: ZoneListProps) {
   const t = useTranslations("HomePage");
   const locale = useLocale();
   const dir = getLocaleDirection(locale);
@@ -101,6 +118,28 @@ export function ZoneList({ zone, error, form, onNext }: ZoneListProps) {
 
       {error ? <p className="mt-4 text-xs text-destructive">{error}</p> : null}
 
+      {activeBookingError ? (
+        <Alert variant="destructive" className="mt-4">
+          {activeBookingError}
+        </Alert>
+      ) : null}
+
+      {activeBooking && !activeBookingError ? (
+        <Alert
+          variant="warning"
+          className="mt-4"
+          icon={
+            <AlertTriangle className="size-5 text-amber-600 dark:text-amber-400" />
+          }
+          title={t("activeBookingNoticeTitle")}
+        >
+          <div className="space-y-3">
+            <p>{t("activeBookingNotice")}</p>
+            <ActiveBookingCountdown expiresAt={activeBooking.expires_at} />
+          </div>
+        </Alert>
+      ) : null}
+
       {zone ? (
         <div className="mt-4 flex flex-col gap-4">
           <ZoneCard zone={zone} />
@@ -169,13 +208,26 @@ export function ZoneList({ zone, error, form, onNext }: ZoneListProps) {
           </div>
         </div>
       ) : null}
-      <div className="w-full mt-4 flex justify-end items-end">
+      <div className="mt-4 flex w-full flex-col gap-2 md:flex-row md:justify-between">
         <Button
-          className="md:w-36 w-full rounded-full"
           type="button"
-          onClick={onNext}
+          variant="outline"
+          className="w-full rounded-full border-2 border-primary font-semibold text-primary hover:text-primary md:w-36"
+          onClick={onBack}
+          disabled={isSubmitting}
         >
-          {t("next")}
+          {t("back")}
+        </Button>
+        <Button
+          className="w-full rounded-full md:w-36"
+          type="submit"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            t("submit")
+          )}
         </Button>
       </div>
     </div>

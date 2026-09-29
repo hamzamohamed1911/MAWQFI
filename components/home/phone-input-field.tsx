@@ -197,15 +197,12 @@ export function PhoneInputField({
       )}
     >
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger   type="button">
-          <button
-            
-            type="button"
-            disabled={disabled}
-            className="flex cursor-pointer shrink-0 items-center gap-1.5 bg-background px-3 transition-colors hover:bg-background/80 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <CountryFlag country={country} labels={labels} />
-          </button>
+        <PopoverTrigger
+          type="button"
+          disabled={disabled}
+          className="flex shrink-0 cursor-pointer items-center gap-1.5 bg-background px-3 transition-colors hover:bg-background/80 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <CountryFlag country={country} labels={labels} />
         </PopoverTrigger>
         <PopoverContent
           align="start"
