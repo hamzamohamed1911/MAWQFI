@@ -6,7 +6,7 @@ import { useState } from "react";
 import { ActiveBookingCountdown } from "@/components/home/active-booking-countdown";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { downloadBookingBill } from "@/lib/api/zones";
+import { downloadBookingBill } from "@/lib/api/download-booking-bill";
 import { printBookingReceipt } from "@/lib/print-booking-receipt";
 import type {
   ActiveBooking,

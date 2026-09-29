@@ -36,10 +36,10 @@ import {
   getActivateBookingErrorMessage,
   parseCheckoutError,
 } from "@/lib/api/booking-errors";
+import { resolveActiveBooking } from "@/lib/api/active-booking";
 import {
   activateBooking,
   confirmBooking,
-  resolveActiveBooking,
   submitBooking,
 } from "@/lib/api/zones";
 import type {

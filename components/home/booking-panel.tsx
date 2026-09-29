@@ -1,11 +1,8 @@
 import { getTranslations } from "next-intl/server";
 import { BookingSteps } from "@/components/home/booking-steps";
 import { getActivateBookingErrorMessage } from "@/lib/api/booking-errors";
-import {
-  activateBooking,
-  fetchZone,
-  resolveActiveBooking,
-} from "@/lib/api/zones";
+import { resolveActiveBooking } from "@/lib/api/active-booking";
+import { activateBooking, fetchZone } from "@/lib/api/zones";
 import type { ActiveBooking } from "@/lib/types/zone";
 
 type BookingPanelProps = {
