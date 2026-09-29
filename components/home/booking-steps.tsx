@@ -362,7 +362,7 @@ export function BookingSteps({
 
             return (
               <TabsContent key={value} value={value}>
-                <h2 className="text-lg font-extrabold text-foreground">
+                <h2 className="text-lg font-bold text-foreground">
                   {t(copy.contentTitleKey)}
                 </h2>
                 {value === "3" ? (
@@ -384,7 +384,9 @@ export function BookingSteps({
                         <PersonalData
                           isSubmitting={false}
                           form={form}
-                          onContinue={() => void handleContinueFromPersonalData()}
+                          onContinue={() =>
+                            void handleContinueFromPersonalData()
+                          }
                         />
                       ) : (
                         <ZoneList
