@@ -1,4 +1,16 @@
 import type { ActiveBooking, PaymentResult } from "@/lib/types/zone";
+
+export function paymentFromBooking(booking: ActiveBooking): PaymentResult {
+  const amount = Number.parseFloat(booking.amount);
+
+  return {
+    ok: true,
+    provider: booking.payment_provider,
+    reference: booking.payment_reference,
+    amount: Number.isFinite(amount) ? amount : 0,
+    currency: booking.currency,
+  };
+}
 import { formatDateTime } from "@/lib/utils/formatDateTime";
 
 export type ReceiptLabels = {

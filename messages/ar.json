@@ -102,6 +102,7 @@
     "paymentReference": "مرجع الدفع",
     "printReceipt": "طباعة الإيصال",
     "printReceiptError": "تعذر تنزيل الإيصال. يرجى المحاولة مرة أخرى.",
+    "printPopupBlocked": "اسمح بالنوافذ المنبثقة لهذا الموقع لطباعة الإيصال، أو تحقق من مجلد التنزيلات.",
     "receiptTitle": "إيصال الموقف",
     "receiptBookingId": "رقم الحجز",
     "receiptSite": "الموقع",

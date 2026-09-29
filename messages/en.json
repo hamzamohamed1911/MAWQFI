@@ -102,6 +102,7 @@
     "paymentReference": "Payment reference",
     "printReceipt": "Print receipt",
     "printReceiptError": "Could not download the receipt. Please try again.",
+    "printPopupBlocked": "Allow pop-ups for this site to print the receipt, or check your downloads folder for the bill file.",
     "receiptTitle": "Parking receipt",
     "receiptBookingId": "Booking ID",
     "receiptSite": "Site",

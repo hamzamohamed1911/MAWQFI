@@ -6,8 +6,11 @@ import { useState } from "react";
 import { ActiveBookingCountdown } from "@/components/home/active-booking-countdown";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { downloadBookingBill } from "@/lib/api/download-booking-bill";
-import { printBookingReceipt } from "@/lib/print-booking-receipt";
+import { printBookingBillFromApi } from "@/lib/api/download-booking-bill";
+import {
+  paymentFromBooking,
+  printBookingReceipt,
+} from "@/lib/print-booking-receipt";
 import type {
   ActiveBooking,
   BookingQuoteResponse,
@@ -43,33 +46,43 @@ export function PaymentStep({
     setIsPrinting(true);
     setPrintError(null);
 
+    const receiptLabels = {
+      title: t("receiptTitle"),
+      bookingId: t("receiptBookingId"),
+      site: t("receiptSite"),
+      zone: t("receiptZone"),
+      plate: t("plate-number"),
+      duration: t("duration"),
+      amount: t("total"),
+      reference: t("paymentReference"),
+      starts: t("receiptStarts"),
+      expires: t("receiptExpires"),
+      hourUnit: t("hourUnit"),
+      hoursUnit: t("hoursUnit"),
+      minuteUnit: t("minuteUnit"),
+      minutesUnit: t("minutesUnit"),
+    };
+
     try {
-      await downloadBookingBill(booking.id, booking.plate);
-    } catch {
-      if (payment) {
+      await printBookingBillFromApi(booking.id, booking.plate);
+    } catch (error) {
+      const popupBlocked =
+        error instanceof Error && error.message === "popup_blocked";
+
+      if (popupBlocked) {
+        setPrintError(t("printPopupBlocked"));
+        return;
+      }
+
+      try {
         printBookingReceipt({
           booking,
-          payment,
+          payment: payment ?? paymentFromBooking(booking),
           locale,
           brandName: t("title"),
-          labels: {
-            title: t("receiptTitle"),
-            bookingId: t("receiptBookingId"),
-            site: t("receiptSite"),
-            zone: t("receiptZone"),
-            plate: t("plate-number"),
-            duration: t("duration"),
-            amount: t("total"),
-            reference: t("paymentReference"),
-            starts: t("receiptStarts"),
-            expires: t("receiptExpires"),
-            hourUnit: t("hourUnit"),
-            hoursUnit: t("hoursUnit"),
-            minuteUnit: t("minuteUnit"),
-            minutesUnit: t("minutesUnit"),
-          },
+          labels: receiptLabels,
         });
-      } else {
+      } catch {
         setPrintError(t("printReceiptError"));
       }
     } finally {

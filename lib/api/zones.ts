@@ -15,10 +15,16 @@ import type {
   ConfirmBookingResponse,
 } from "@/lib/types/zone";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+function getApiBaseUrl(): string {
+  const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+  if (!base) {
+    throw new Error("NEXT_PUBLIC_API_URL is not configured");
+  }
+  return base;
+}
 
 export async function fetchZone(qrId: string) {
-  const response = await fetch(`${API_URL}/public/zones/${qrId}`, {
+  const response = await fetch(`${getApiBaseUrl()}/public/zones/${qrId}`, {
     cache: "no-store",
   });
   const data = (await response.json()) as ParkingZone & { detail?: string };
@@ -33,7 +39,7 @@ export async function fetchZone(qrId: string) {
 export async function submitBooking(
   bookingBody: BookingInput,
 ): Promise<ApiActionResult<BookingQuoteResponse>> {
-  const response = await fetch(`${API_URL}/public/bookings/checkout/`, {
+  const response = await fetch(`${getApiBaseUrl()}/public/bookings/checkout/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(bookingBody),
@@ -50,7 +56,7 @@ export async function submitBooking(
 export async function confirmBooking(
   checkout_id: string,
 ): Promise<ApiActionResult<ConfirmBookingResponse>> {
-  const response = await fetch(`${API_URL}/public/bookings/confirm/`, {
+  const response = await fetch(`${getApiBaseUrl()}/public/bookings/confirm/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ checkout_id }),
@@ -72,9 +78,12 @@ export async function activateBooking(params: {
     zone: String(params.zone),
     plate: params.plate,
   });
-  const response = await fetch(`${API_URL}/public/bookings/active/?${search}`, {
-    cache: "no-store",
-  });
+  const response = await fetch(
+    `${getApiBaseUrl()}/public/bookings/active/?${search}`,
+    {
+      cache: "no-store",
+    },
+  );
 
   /** No active booking for this plate/zone — normal case, not an error. */
   if (response.status === 404) {
@@ -93,9 +102,12 @@ export async function activateBooking(params: {
 }
 
 export async function fetchBooking(bookingId: string) {
-  const response = await fetch(`${API_URL}/public/bookings/${bookingId}`, {
-    cache: "no-store",
-  });
+  const response = await fetch(
+    `${getApiBaseUrl()}/public/bookings/${bookingId}`,
+    {
+      cache: "no-store",
+    },
+  );
   const data = await response.json();
 
   if (!response.ok) {
@@ -103,4 +115,31 @@ export async function fetchBooking(bookingId: string) {
   }
 
   return data;
+}
+
+export async function fetchBookingBillHtml(
+  bookingId: number,
+  plate: string,
+): Promise<ApiActionResult<{ html: string }>> {
+  const query = new URLSearchParams({ plate });
+  const response = await fetch(
+    `${getApiBaseUrl()}/public/bookings/${encodeURIComponent(String(bookingId))}/bill/?${query}`,
+    { cache: "no-store", headers: { Accept: "text/html" } },
+  );
+
+  if (!response.ok) {
+    let error: ApiErrorBody = { detail: "request_failed" };
+    try {
+      error = (await response.json()) as ApiErrorBody;
+    } catch {
+      const text = await response.text();
+      if (text.length > 0) {
+        error = { detail: text.slice(0, 500) };
+      }
+    }
+    return apiFailure(error);
+  }
+
+  const html = await response.text();
+  return apiSuccess({ html });
 }
