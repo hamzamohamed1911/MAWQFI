@@ -1,3 +1,4 @@
+"use server";
 import type { ParkingZone } from "@/lib/zones";
 import { BookingInput } from "../schemas/booking.schema";
 import type {
