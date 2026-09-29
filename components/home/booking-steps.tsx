@@ -8,7 +8,7 @@ import {
   useQueryState,
 } from "nuqs";
 import { Check } from "lucide-react";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { ZoneList } from "@/components/home/zone-list";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -32,9 +32,10 @@ import {
   BookingInput,
   createBookingSchema,
 } from "@/lib/schemas/booking.schema";
+import { parseCheckoutError } from "@/lib/api/booking-errors";
 import { confirmBooking, submitBooking } from "@/lib/api/zones";
 import type {
-  ActivateBookingResponse,
+  ActiveBooking,
   BookingQuoteResponse,
   ConfirmBookingResponse,
 } from "@/lib/types/zone";
@@ -62,7 +63,7 @@ const stepCopy = {
 type BookingStepsProps = {
   zone: ParkingZone | null;
   zoneError?: string | null;
-  activeBooking?: ActivateBookingResponse | null;
+  activeBooking?: ActiveBooking | null;
   activeBookingError?: string | null;
 };
 
@@ -88,6 +89,12 @@ export function BookingSteps({
     useState<BookingQuoteResponse | null>(null);
   const [confirmResult, setConfirmResult] =
     useState<ConfirmBookingResponse | null>(null);
+  const [resolvedActiveBooking, setResolvedActiveBooking] =
+    useState<ActiveBooking | null>(activeBooking ?? null);
+  const [resolvedActiveBookingError, setResolvedActiveBookingError] = useState<
+    string | null
+  >(activeBookingError ?? null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [step, setStep] = useQueryState(
     "step",
     parseAsStringLiteral(BOOKING_STEPS)
@@ -133,6 +140,19 @@ export function BookingSteps({
     }
   }, [zoneParam, zone, form]);
 
+  useEffect(() => {
+    setResolvedActiveBooking(activeBooking ?? null);
+    setResolvedActiveBookingError(activeBookingError ?? null);
+  }, [activeBooking, activeBookingError]);
+
+  const handleActiveBookingChange = useCallback(
+    (booking: ActiveBooking | null, error: string | null) => {
+      setResolvedActiveBooking(booking);
+      setResolvedActiveBookingError(error);
+    },
+    [],
+  );
+
   const handleNextFromZone = async () => {
     const isValid = await form.trigger(["zone", "hours"]);
 
@@ -144,7 +164,12 @@ export function BookingSteps({
   };
 
   const handleBackToZone = () => {
+    setCheckoutError(null);
     void setStep("1");
+  };
+
+  const handleBackToPersonalData = () => {
+    void setStep("2");
   };
 
   const registerMutation = useMutation({
@@ -162,6 +187,7 @@ export function BookingSteps({
 
     onMutate: () => {
       form.clearErrors();
+      setCheckoutError(null);
     },
 
     onSuccess: ({ checkout, confirmed }) => {
@@ -172,22 +198,19 @@ export function BookingSteps({
     },
 
     onError: (error) => {
-      const backendErrors = error;
+      const { messages, fieldErrors } = parseCheckoutError(error);
 
-      if (!backendErrors) {
-        return;
-      }
-
-      Object.entries(backendErrors).forEach(([field, messages]) => {
-        if (!Array.isArray(messages) || messages.length === 0) {
-          return;
-        }
-
+      for (const [field, message] of Object.entries(fieldErrors)) {
         form.setError(field as keyof BookingInput, {
           type: "server",
-          message: messages[0],
+          message,
         });
-      });
+      }
+
+      const alertMessage =
+        messages[0] ?? fieldErrors.hours ?? fieldErrors.plate ?? null;
+
+      setCheckoutError(alertMessage ?? t("checkoutError"));
     },
   });
 
@@ -198,6 +221,7 @@ export function BookingSteps({
     await setPlateParam(values.plate.trim());
     registerMutation.mutate({
       ...values,
+      plate: values.plate.trim(),
       shopper_result_url: `${process.env.NEXT_PUBLIC_API_URL}/${locale}/payment/result`,
     });
   }
@@ -283,10 +307,11 @@ export function BookingSteps({
                 </h2>
                 {value === "3" ? (
                   <PaymentStep
-                    activeBooking={activeBooking?.booking ?? null}
+                    activeBooking={resolvedActiveBooking}
                     checkoutResult={checkoutResult}
                     confirmResult={confirmResult}
-                    activeBookingError={activeBookingError}
+                    activeBookingError={resolvedActiveBookingError}
+                    onBack={handleBackToPersonalData}
                   />
                 ) : (
                   <Form {...form}>
@@ -307,6 +332,10 @@ export function BookingSteps({
                           onBack={handleBackToZone}
                           isSubmitting={isSubmitting}
                           form={form}
+                          initialActiveBooking={activeBooking}
+                          initialActiveBookingError={activeBookingError}
+                          onActiveBookingChange={handleActiveBookingChange}
+                          checkoutError={checkoutError}
                         />
                       )}
                     </form>

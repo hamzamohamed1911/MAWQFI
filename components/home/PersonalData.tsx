@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { parseAsString, useQueryState } from "nuqs";
+import { getActivateBookingErrorMessage } from "@/lib/api/booking-errors";
+import { activateBooking, resolveActiveBooking } from "@/lib/api/zones";
 import {
   FormControl,
   FormField,
@@ -17,16 +20,33 @@ import { Input } from "../ui/input";
 import Image from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Button } from "../ui/button";
-import { Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
+import { ActiveBookingCountdown } from "@/components/home/active-booking-countdown";
+import { Alert } from "@/components/ui/alert";
+import type { ActiveBooking } from "@/lib/types/zone";
 
 type PersonalDataProps = {
   form: UseFormReturn<BookingInput>;
   isSubmitting: boolean;
   onBack: () => void;
-  activeBookingError?: string | null;
+  initialActiveBooking?: ActiveBooking | null;
+  initialActiveBookingError?: string | null;
+  onActiveBookingChange?: (
+    booking: ActiveBooking | null,
+    error: string | null,
+  ) => void;
+  checkoutError?: string | null;
 };
 
-const PersonalData = ({ form, isSubmitting, onBack }: PersonalDataProps) => {
+const PersonalData = ({
+  form,
+  isSubmitting,
+  onBack,
+  initialActiveBooking,
+  initialActiveBookingError,
+  onActiveBookingChange,
+  checkoutError,
+}: PersonalDataProps) => {
   type Country = CountryCode;
 
   const DEFAULT_COUNTRY: Country = "SA";
@@ -38,6 +58,60 @@ const PersonalData = ({ form, isSubmitting, onBack }: PersonalDataProps) => {
   const [numbers, setNumbers] = useState("");
   const [letters, setLetters] = useState("");
   const plateValue = form.watch("plate");
+  const zoneId = form.watch("zone");
+  const [plateParam] = useQueryState(
+    "plate",
+    parseAsString.withOptions({ history: "push", shallow: false }),
+  );
+  const [activeBooking, setActiveBooking] = useState<ActiveBooking | null>(
+    initialActiveBooking ?? null,
+  );
+  const [activeBookingError, setActiveBookingError] = useState<string | null>(
+    initialActiveBookingError ?? null,
+  );
+
+  useEffect(() => {
+    const plateFromParams = plateParam?.trim();
+
+    if (!plateFromParams) {
+      setActiveBooking(null);
+      setActiveBookingError(null);
+      onActiveBookingChange?.(null, null);
+      return;
+    }
+
+    if (!zoneId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void activateBooking({ zone: zoneId, plate: plateFromParams }).then(
+      (response) => {
+        if (cancelled) {
+          return;
+        }
+        const resolved = resolveActiveBooking(response);
+        setActiveBooking(resolved);
+        setActiveBookingError(null);
+        onActiveBookingChange?.(resolved, null);
+      },
+      (error) => {
+        if (cancelled) {
+          return;
+        }
+        const message =
+          getActivateBookingErrorMessage(error) ?? t("activeBookingError");
+        setActiveBooking(null);
+        setActiveBookingError(message);
+        onActiveBookingChange?.(null, message);
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [plateParam, zoneId, onActiveBookingChange, t]);
 
   useEffect(() => {
     if (!plateValue) {
@@ -58,6 +132,29 @@ const PersonalData = ({ form, isSubmitting, onBack }: PersonalDataProps) => {
       <p className="lg:text-lg md:text-base text-sm text-muted-foreground">
         {t("personalDataStepHint")}
       </p>
+
+      {checkoutError ? (
+        <Alert variant="destructive">{checkoutError}</Alert>
+      ) : null}
+
+      {activeBookingError ? (
+        <Alert variant="destructive">{activeBookingError}</Alert>
+      ) : null}
+
+      {activeBooking && !activeBookingError ? (
+        <Alert
+          variant="warning"
+          icon={
+            <AlertTriangle className="size-5 text-amber-600 dark:text-amber-400" />
+          }
+          title={t("activeBookingNoticeTitle")}
+        >
+          <div className="space-y-3">
+            <p>{t("activeBookingNotice")}</p>
+            <ActiveBookingCountdown expiresAt={activeBooking.expires_at} />
+          </div>
+        </Alert>
+      ) : null}
 
       {/* Phone */}
       <FormField

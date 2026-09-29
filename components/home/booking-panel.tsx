@@ -1,10 +1,12 @@
 import { getTranslations } from "next-intl/server";
 import { BookingSteps } from "@/components/home/booking-steps";
-import { activateBooking, fetchZone } from "@/lib/api/zones";
-import type {
-  ActivateBookingErrorResponse,
-  ActivateBookingResponse,
-} from "@/lib/types/zone";
+import { getActivateBookingErrorMessage } from "@/lib/api/booking-errors";
+import {
+  activateBooking,
+  fetchZone,
+  resolveActiveBooking,
+} from "@/lib/api/zones";
+import type { ActiveBooking } from "@/lib/types/zone";
 
 type BookingPanelProps = {
   qrId: string;
@@ -12,17 +14,7 @@ type BookingPanelProps = {
   zoneId?: string;
 };
 
-function getActivateBookingErrorMessage(error: unknown): string | null {
-  const detail = (error as ActivateBookingErrorResponse).detail;
-
-  return typeof detail === "string" && detail.length > 0 ? detail : null;
-}
-
-export async function BookingPanel({
-  qrId,
-  plate,
-  zoneId,
-}: BookingPanelProps) {
+export async function BookingPanel({ qrId, plate, zoneId }: BookingPanelProps) {
   const t = await getTranslations("HomePage");
   let zone = null;
   let zoneError: string | null = null;
@@ -33,7 +25,7 @@ export async function BookingPanel({
     zoneError = t("zonesError");
   }
 
-  let activeBooking: ActivateBookingResponse | null = null;
+  let activeBooking: ActiveBooking | null = null;
   let activeBookingError: string | null = null;
   const trimmedPlate = plate?.trim();
   const parsedZoneId = zoneId ? Number(zoneId) : undefined;
@@ -44,10 +36,11 @@ export async function BookingPanel({
 
   if (trimmedPlate && resolvedZoneId) {
     try {
-      activeBooking = await activateBooking({
+      const activeResponse = await activateBooking({
         zone: resolvedZoneId,
         plate: trimmedPlate,
       });
+      activeBooking = resolveActiveBooking(activeResponse);
     } catch (error) {
       activeBookingError =
         getActivateBookingErrorMessage(error) ?? t("activeBookingError");

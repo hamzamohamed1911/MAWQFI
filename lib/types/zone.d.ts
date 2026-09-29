@@ -18,7 +18,7 @@ export type ActiveBooking = {
 };
 
 export type ActivateBookingResponse = {
-  booking: ActiveBooking;
+  booking: ActiveBooking | null;
 };
 
 export type ActivateBookingErrorResponse = {

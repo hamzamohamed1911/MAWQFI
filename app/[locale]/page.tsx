@@ -1,7 +1,7 @@
 import { hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { ScanQr } from "@/components/home/scan-qr";
+import { HomeLanding } from "@/components/home/home-landing";
 import { routing } from "@/i18n/routing";
 
 type HomePageProps = {
@@ -18,10 +18,8 @@ export default async function HomePage({ params }: HomePageProps) {
   setRequestLocale(locale);
 
   return (
-    <main className="relative flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6 sm:py-10">
-      <section className="w-full max-w-md rounded-2xl bg-card p-6 text-card-foreground shadow-lg sm:p-8">
-        <ScanQr />
-      </section>
+    <main className="relative flex flex-1 flex-col items-center justify-center bg-background px-4 py-8 sm:px-6 sm:py-12 dark:bg-background">
+      <HomeLanding />
     </main>
   );
 }
