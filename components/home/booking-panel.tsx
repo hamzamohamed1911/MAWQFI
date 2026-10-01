@@ -1,17 +1,14 @@
 import { getTranslations } from "next-intl/server";
 import { BookingSteps } from "@/components/home/booking-steps";
-import { getActivateBookingErrorMessage } from "@/lib/api/booking-errors";
-import { resolveActiveBooking } from "@/lib/api/active-booking";
 import { activateBooking, fetchZone } from "@/lib/api/zones";
 import type { ActiveBooking } from "@/lib/types/zone";
 
 type BookingPanelProps = {
   qrId: string;
   plate?: string;
-  zoneId?: string;
 };
 
-export async function BookingPanel({ qrId, plate, zoneId }: BookingPanelProps) {
+export async function BookingPanel({ qrId, plate }: BookingPanelProps) {
   const t = await getTranslations("HomePage");
   let zone = null;
   let zoneError: string | null = null;
@@ -25,25 +22,19 @@ export async function BookingPanel({ qrId, plate, zoneId }: BookingPanelProps) {
   let activeBooking: ActiveBooking | null = null;
   let activeBookingError: string | null = null;
   const trimmedPlate = plate?.trim();
-  const parsedZoneId = zoneId ? Number(zoneId) : undefined;
-  const resolvedZoneId =
-    parsedZoneId !== undefined && !Number.isNaN(parsedZoneId)
-      ? parsedZoneId
-      : zone?.id;
+  const zoneId = zone?.id;
 
-  if (trimmedPlate && resolvedZoneId) {
+  if (trimmedPlate && zoneId) {
     try {
       const activeResponse = await activateBooking({
-        zone: resolvedZoneId,
+        zone: zoneId,
         plate: trimmedPlate,
       });
-      activeBooking = resolveActiveBooking(activeResponse);
-    } catch (error) {
-      activeBookingError =
-        getActivateBookingErrorMessage(error) ?? t("activeBookingError");
+      activeBooking = activeResponse.booking ?? null;
+    } catch (error: unknown) {
+      activeBookingError = error as string | null;
     }
   }
-
   return (
     <BookingSteps
       zone={zone}

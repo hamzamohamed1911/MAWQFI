@@ -1,5 +1,4 @@
 import type { BookingInput } from "@/lib/schemas/booking.schema";
-import type { ActivateBookingErrorResponse } from "@/lib/types/zone";
 
 const BOOKING_FORM_FIELDS = new Set<keyof BookingInput>([
   "zone",
@@ -9,12 +8,6 @@ const BOOKING_FORM_FIELDS = new Set<keyof BookingInput>([
   "hours",
   "shopper_result_url",
 ]);
-
-export function getActivateBookingErrorMessage(error: unknown): string | null {
-  const detail = (error as ActivateBookingErrorResponse).detail;
-
-  return typeof detail === "string" && detail.length > 0 ? detail : null;
-}
 
 function firstFieldMessage(value: unknown): string | undefined {
   if (typeof value === "string" && value.length > 0) {

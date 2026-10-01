@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { isValidPhoneNumberForCountry } from "@/lib/utils/phone";
+import { isValidSaudiPlate } from "@/lib/utils/saudi-plate";
 
 type TranslateFn = (key: string) => string;
 export const createBookingSchema = (t: TranslateFn) =>
@@ -8,7 +9,11 @@ export const createBookingSchema = (t: TranslateFn) =>
     .object({
       zone: z.number().int().positive(t("validation-zone-required")),
 
-      plate: z.string().trim().min(1, t("validation-plate-required")),
+      plate: z
+        .string()
+        .trim()
+        .min(1, t("validation-plate-required"))
+        .refine(isValidSaudiPlate, t("validation-plate-invalid")),
 
       phone_country: z.string().min(1, t("validation-field-required")),
 

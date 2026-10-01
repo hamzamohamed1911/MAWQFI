@@ -1,14 +1,8 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import {
-  parseAsInteger,
-  parseAsString,
-  parseAsStringLiteral,
-  useQueryState,
-} from "nuqs";
-import { Check } from "lucide-react";
-import { Fragment, useEffect, useState } from "react";
+import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
+import { useEffect, useState } from "react";
 import { ZoneList } from "@/components/home/zone-list";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -22,6 +16,8 @@ import { useRouter } from "@/i18n/navigation";
 import { getLocaleDirection } from "@/i18n/routing";
 import type { ParkingZone } from "@/lib/zones";
 import { cn } from "@/lib/utils/cn";
+import { phoneFieldsFromE164 } from "@/lib/utils/phone";
+import { normalizePlateValue } from "@/lib/utils/saudi-plate";
 import PersonalData from "./PersonalData";
 import { useForm } from "react-hook-form";
 
@@ -32,41 +28,17 @@ import {
   BookingInput,
   createBookingSchema,
 } from "@/lib/schemas/booking.schema";
-import {
-  getActivateBookingErrorMessage,
-  parseCheckoutError,
-} from "@/lib/api/booking-errors";
-import { resolveActiveBooking } from "@/lib/api/active-booking";
-import {
-  activateBooking,
-  confirmBooking,
-  submitBooking,
-} from "@/lib/api/zones";
+import { parseCheckoutError } from "@/lib/api/booking-errors";
+import { confirmBooking, submitBooking } from "@/lib/api/zones";
 import type {
   ActiveBooking,
   BookingQuoteResponse,
   ConfirmBookingResponse,
 } from "@/lib/types/zone";
+import { BookingStepNav } from "./booking-step-nav";
 import { BookingSummary } from "./booking-summary";
+import { PaymentReviewStep } from "./payment-review-step";
 import { PaymentStep } from "./payment-step";
-
-const stepCopy = {
-  "1": {
-    titleKey: "personalData",
-    contentTitleKey: "personalDataTitle",
-    contentDescriptionKey: "personalDataDescription",
-  },
-  "2": {
-    titleKey: "zoneTime",
-    contentTitleKey: "zoneTimeTitle",
-    contentDescriptionKey: "zoneTimeDescription",
-  },
-  "3": {
-    titleKey: "payment",
-    contentTitleKey: "paymentTitle",
-    contentDescriptionKey: "paymentDescription",
-  },
-} as const;
 
 type BookingStepsProps = {
   zone: ParkingZone | null;
@@ -78,17 +50,13 @@ type BookingStepsProps = {
 export function BookingSteps({
   zone,
   zoneError,
-  activeBooking: initialActiveBooking,
-  activeBookingError: initialActiveBookingError,
+  activeBooking = null,
+  activeBookingError = null,
 }: BookingStepsProps) {
   const t = useTranslations("HomePage");
   const locale = useLocale();
   const router = useRouter();
   const dir = getLocaleDirection(locale);
-  const [zoneParam] = useQueryState(
-    "zone",
-    parseAsInteger.withOptions({ history: "replace" }),
-  );
   const [plateParam, setPlateParam] = useQueryState(
     "plate",
     parseAsString.withOptions({ history: "push", shallow: false }),
@@ -97,11 +65,6 @@ export function BookingSteps({
     useState<BookingQuoteResponse | null>(null);
   const [confirmResult, setConfirmResult] =
     useState<ConfirmBookingResponse | null>(null);
-  const [resolvedActiveBooking, setResolvedActiveBooking] =
-    useState<ActiveBooking | null>(initialActiveBooking ?? null);
-  const [resolvedActiveBookingError, setResolvedActiveBookingError] = useState<
-    string | null
-  >(initialActiveBookingError ?? null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [step, setStep] = useQueryState(
     "step",
@@ -132,6 +95,7 @@ export function BookingSteps({
   const form = useForm<BookingInput>({
     resolver: zodResolver(schema),
     defaultValues: bookingDefaultValues,
+    mode: "onChange",
   });
 
   useEffect(() => {
@@ -142,66 +106,31 @@ export function BookingSteps({
   }, [plateParam, form]);
 
   useEffect(() => {
-    const resolvedZoneId = zoneParam ?? zone?.id;
-    if (resolvedZoneId && resolvedZoneId > 0) {
-      form.setValue("zone", resolvedZoneId);
+    if (zone?.id && zone.id > 0) {
+      form.setValue("zone", zone.id);
     }
-  }, [zoneParam, zone, form]);
-
-  const watchedZone = form.watch("zone");
+  }, [zone, form]);
 
   useEffect(() => {
-    setResolvedActiveBooking(initialActiveBooking ?? null);
-    setResolvedActiveBookingError(initialActiveBookingError ?? null);
-  }, [initialActiveBooking, initialActiveBookingError]);
-
-  useEffect(() => {
-    const onZoneOrPaymentStep = step === "2" || step === "3";
-    if (!onZoneOrPaymentStep) {
+    const e164 = activeBooking?.phone?.trim();
+    if (!e164) {
       return;
     }
 
-    const plateFromParams = plateParam?.trim();
-    const resolvedZoneId = zoneParam ?? zone?.id ?? watchedZone;
-
-    if (!plateFromParams) {
-      setResolvedActiveBooking(null);
-      setResolvedActiveBookingError(null);
+    const fields = phoneFieldsFromE164(e164);
+    if (!fields) {
       return;
     }
 
-    if (!resolvedZoneId) {
-      return;
-    }
-
-    let cancelled = false;
-
-    void activateBooking({
-      zone: resolvedZoneId,
-      plate: plateFromParams,
-    }).then(
-      (response) => {
-        if (cancelled) {
-          return;
-        }
-        setResolvedActiveBooking(resolveActiveBooking(response));
-        setResolvedActiveBookingError(null);
-      },
-      (error) => {
-        if (cancelled) {
-          return;
-        }
-        setResolvedActiveBooking(null);
-        setResolvedActiveBookingError(
-          getActivateBookingErrorMessage(error) ?? t("activeBookingError"),
-        );
-      },
-    );
-
-    return () => {
-      cancelled = true;
-    };
-  }, [step, plateParam, zoneParam, zone?.id, watchedZone, t]);
+    form.setValue("phone_country", fields.phone_country, {
+      shouldValidate: true,
+      shouldDirty: false,
+    });
+    form.setValue("phone", fields.phone, {
+      shouldValidate: true,
+      shouldDirty: false,
+    });
+  }, [activeBooking?.phone, form]);
 
   const handleContinueFromPersonalData = async () => {
     const isValid = await form.trigger(["phone", "phone_country", "plate"]);
@@ -210,18 +139,31 @@ export function BookingSteps({
       return;
     }
 
-    await setPlateParam(form.getValues("plate").trim());
-    setResolvedActiveBooking(null);
-    setResolvedActiveBookingError(null);
+    const plate = normalizePlateValue(form.getValues("plate"));
+    form.setValue("plate", plate, { shouldValidate: false });
+    await setPlateParam(plate);
     void setStep("2");
+    router.refresh();
   };
 
   const handleBackToPersonalData = () => {
     void setStep("1");
   };
 
-  const handleBackToZone = () => {
+  const handleBackToDuration = () => {
     void setStep("2");
+  };
+
+  const handleExtendBooking = () => {
+    void setStep("2");
+  };
+
+  const handleContinueFromDuration = async () => {
+    const zoneValid = await form.trigger(["zone", "hours"]);
+    if (!zoneValid) {
+      return;
+    }
+    void setStep("3");
   };
 
   const registerMutation = useMutation({
@@ -254,7 +196,14 @@ export function BookingSteps({
     onSuccess: ({ checkout, confirmed }) => {
       setCheckoutResult(checkout);
       setConfirmResult(confirmed);
-      void setStep("3");
+
+      const redirectUrl = checkout.redirect_url?.trim();
+      if (redirectUrl && typeof window !== "undefined") {
+        window.location.assign(redirectUrl);
+        return;
+      }
+
+      void setStep("4");
       router.refresh();
     },
 
@@ -278,27 +227,25 @@ export function BookingSteps({
   const isSubmitting =
     registerMutation.isPending || form.formState.isSubmitting;
 
-  async function onSubmit(values: BookingInput) {
-    if (step !== "2") {
-      return;
-    }
+  const handlePay = () => {
+    void form.handleSubmit((values) => {
+      registerMutation.mutate({
+        ...values,
+        plate: normalizePlateValue(values.plate),
+        shopper_result_url: `${process.env.NEXT_PUBLIC_API_URL}/${locale}/payment/result`,
+      });
+    })();
+  };
 
-    const zoneValid = await form.trigger(["zone", "hours"]);
-    if (!zoneValid) {
-      return;
-    }
-
-    registerMutation.mutate({
-      ...values,
-      plate: values.plate.trim(),
-      shopper_result_url: `${process.env.NEXT_PUBLIC_API_URL}/${locale}/payment/result`,
-    });
-  }
-
-  const currentStepNumber = Number(step);
+  const showBookingSummary = step === "1" || step === "2";
 
   return (
-    <>
+    <div
+      className={cn(
+        "grid gap-6 lg:items-start",
+        showBookingSummary && "lg:grid-cols-[minmax(0,1fr)_20rem]",
+      )}
+    >
       <section className="rounded-2xl  md:p-4 p-0 text-start text-card-foreground md:shadow-lg shadow-none ">
         <Tabs
           dir={dir}
@@ -306,118 +253,60 @@ export function BookingSteps({
           onValueChange={handleStepChange}
           className="w-full text-start"
         >
-          <nav
-            aria-label={t("stepLabel", { number: step })}
-            className="mb-2 flex w-full items-start justify-between gap-1 sm:gap-2"
-          >
-            {BOOKING_STEPS.map((value, index) => {
-              const copy = stepCopy[value];
-              const stepNumber = Number(value);
-              const isCompleted = stepNumber < currentStepNumber;
-              const isActive = value === step;
-              const isUpcoming = stepNumber > currentStepNumber;
-              const connectorComplete =
-                index > 0 && stepNumber <= currentStepNumber;
+          <BookingStepNav step={step} />
 
-              return (
-                <Fragment key={value}>
-                  {index > 0 ? (
-                    <div
-                      className={cn(
-                        "mt-4 h-2 min-w-4 flex-1 rounded-full sm:min-w-8 sm:h-2.5",
-                        connectorComplete ? "bg-primary-400" : "bg-primary-100",
-                      )}
-                      aria-hidden
-                    />
-                  ) : null}
-
-                  <div className="flex min-w-9 shrink-0 flex-col items-center gap-2 sm:min-w-10">
-                    <div
-                      className={cn(
-                        "flex size-9 items-center justify-center rounded-full text-sm font-bold transition-colors sm:size-10 sm:text-base",
-                        isCompleted && "bg-primary-400 text-white",
-                        isActive && "bg-primary-600 text-white",
-                        isUpcoming &&
-                          "border-2 border-primary-200 bg-primary-50 text-primary-400",
-                      )}
-                      aria-current={isActive ? "step" : undefined}
-                    >
-                      {isCompleted ? (
-                        <Check
-                          className="size-5 stroke-3 sm:size-6"
-                          aria-hidden
-                        />
-                      ) : (
-                        value
-                      )}
-                    </div>
-
-                    <span
-                      className={cn(
-                        "max-w-22 text-center text-[11px] font-semibold leading-tight text-muted-foreground sm:max-w-none sm:text-xs",
-                        !isActive && "invisible",
-                      )}
-                    >
-                      {t(copy.titleKey)}
-                    </span>
-                  </div>
-                </Fragment>
-              );
-            })}
-          </nav>
-
-          {BOOKING_STEPS.map((value) => {
-            const copy = stepCopy[value];
-
-            return (
-              <TabsContent key={value} value={value}>
-                <h2 className="text-lg font-bold text-foreground">
-                  {t(copy.contentTitleKey)}
-                </h2>
-                {value === "3" ? (
-                  <PaymentStep
-                    activeBooking={resolvedActiveBooking}
-                    checkoutResult={checkoutResult}
-                    confirmResult={confirmResult}
-                    activeBookingError={resolvedActiveBookingError}
-                    onBack={handleBackToZone}
-                  />
-                ) : (
-                  <Form {...form}>
-                    <form
-                      onSubmit={form.handleSubmit(onSubmit)}
-                      className="space-y-4 "
-                      noValidate
-                    >
-                      {value === "1" ? (
-                        <PersonalData
-                          isSubmitting={false}
-                          form={form}
-                          onContinue={() =>
-                            void handleContinueFromPersonalData()
-                          }
-                        />
-                      ) : (
-                        <ZoneList
-                          form={form}
-                          zone={zone}
-                          error={zoneError}
-                          checkoutError={checkoutError}
-                          isSubmitting={isSubmitting}
-                          activeBooking={resolvedActiveBooking}
-                          activeBookingError={resolvedActiveBookingError}
-                          onBack={handleBackToPersonalData}
-                        />
-                      )}
-                    </form>
-                  </Form>
-                )}
-              </TabsContent>
-            );
-          })}
+          {BOOKING_STEPS.map((value) => (
+            <TabsContent key={value} value={value}>
+              {value === "1" || value === "2" ? (
+                <Form {...form}>
+                  <form className="space-y-4" noValidate>
+                    {value === "1" ? (
+                      <PersonalData
+                        zone={zone}
+                        isSubmitting={false}
+                        form={form}
+                        onContinue={() => void handleContinueFromPersonalData()}
+                      />
+                    ) : (
+                      <ZoneList
+                        form={form}
+                        zone={zone}
+                        error={zoneError}
+                        checkoutError={checkoutError}
+                        isSubmitting={false}
+                        activeBooking={activeBooking}
+                        activeBookingError={activeBookingError}
+                        onBack={handleBackToPersonalData}
+                        onContinue={() => void handleContinueFromDuration()}
+                      />
+                    )}
+                  </form>
+                </Form>
+              ) : null}
+              {value === "3" ? (
+                <PaymentReviewStep
+                  zone={zone}
+                  form={form}
+                  checkoutError={checkoutError}
+                  isSubmitting={isSubmitting}
+                  onBack={handleBackToDuration}
+                  onPay={handlePay}
+                />
+              ) : null}
+              {value === "4" ? (
+                <PaymentStep
+                  activeBooking={activeBooking}
+                  checkoutResult={checkoutResult}
+                  confirmResult={confirmResult}
+                  activeBookingError={activeBookingError}
+                  onExtend={handleExtendBooking}
+                />
+              ) : null}
+            </TabsContent>
+          ))}
         </Tabs>
       </section>
-      <BookingSummary zone={zone} form={form} />
-    </>
+      {showBookingSummary ? <BookingSummary zone={zone} form={form} /> : null}
+    </div>
   );
 }

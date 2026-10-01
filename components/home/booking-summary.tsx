@@ -34,30 +34,9 @@ export function BookingSummary({ form, zone }: BookingSummaryProps) {
   const endDate = new Date(startDate.getTime() + hours * 60 * 60 * 1000);
 
   return (
-    <aside className="rounded-2xl bg-card p-4 text-start text-card-foreground md:shadow-xl shadow-sm sm:p-6 lg:sticky lg:top-24">
-      {/* Header */}
-      <h2 className="text-sm font-extrabold text-foreground">
-        {t("summaryTitle")}
-      </h2>
-
-      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-        {t("summaryDescription")}
-      </p>
-
+    <aside className="rounded-2xl bg-card p-4 text-start border border-[#E1E5E0] text-card-foreground  sm:p-6 lg:sticky lg:top-24">
       <div className="mt-5 space-y-5">
-        {/* Zone */}
         <div>
-          <h3 className="text-sm font-semibold text-muted-foreground">
-            {zone?.site_name || "-"}
-          </h3>
-
-          <p className="mt-1 text-sm font-semibold text-foreground">
-            {zone?.name || "-"}
-          </p>
-        </div>
-
-        {/* Selected Time */}
-        <div className="border-t pt-4">
           <h3 className="text-sm font-semibold text-foreground">
             {t("selectedTime")}
           </h3>
@@ -127,7 +106,7 @@ export function BookingSummary({ form, zone }: BookingSummaryProps) {
             <div className="flex items-center justify-between border-t pt-3">
               <span className="font-bold text-foreground">{t("total")}</span>
 
-              <span className="text-lg font-extrabold text-foreground">
+              <span className="text-lg font-extrabold text-primary-600">
                 {total.toFixed(2)} {currency}
               </span>
             </div>

@@ -1,12 +1,16 @@
 "use client";
 
+import type { ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { AlertTriangle, CheckCircle2, Loader2, Printer } from "lucide-react";
-import { useState } from "react";
-import { ActiveBookingCountdown } from "@/components/home/active-booking-countdown";
+import { Copy, FileText, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { toast } from "sonner";
+
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { printBookingBillFromApi } from "@/lib/api/download-booking-bill";
+import { useNow } from "@/lib/hooks/use-now";
 import {
   paymentFromBooking,
   printBookingReceipt,
@@ -16,20 +20,32 @@ import type {
   BookingQuoteResponse,
   ConfirmBookingResponse,
 } from "@/lib/types/zone";
+import { formatRemainingDuration } from "@/lib/utils/format-remaining";
+import { formatDateTime } from "@/lib/utils/formatDateTime";
+import { cn } from "@/lib/utils/cn";
 
 type PaymentStepProps = {
   activeBooking: ActiveBooking | null;
   checkoutResult: BookingQuoteResponse | null;
   confirmResult: ConfirmBookingResponse | null;
-  activeBookingError?: string | null;
-  onBack: () => void;
+  activeBookingError?: unknown;
+  onExtend: () => void;
 };
+
+function DetailRow({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3  py-3 text-sm last:border-b-0">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-end font-semibold text-foreground">{value}</span>
+    </div>
+  );
+}
 
 export function PaymentStep({
   activeBooking,
   confirmResult,
   activeBookingError,
-  onBack,
+  onExtend,
 }: PaymentStepProps) {
   const t = useTranslations("HomePage");
   const locale = useLocale();
@@ -38,7 +54,62 @@ export function PaymentStep({
   const [isPrinting, setIsPrinting] = useState(false);
   const [printError, setPrintError] = useState<string | null>(null);
 
-  async function handlePrintReceipt() {
+  const expiresAt = booking?.expires_at;
+  const targetMs = useMemo(
+    () => (expiresAt ? new Date(expiresAt).getTime() : 0),
+    [expiresAt],
+  );
+  const now = useNow();
+  const msLeft = now !== 0 && targetMs > 0 ? Math.max(0, targetMs - now) : null;
+
+  const remainingLine = (() => {
+    if (msLeft === null) {
+      return "—";
+    }
+    const totalMinutes = Math.floor(msLeft / 60_000);
+    if (totalMinutes < 60) {
+      return t("timeRemainingMinutes", { count: totalMinutes });
+    }
+    const formatted = formatRemainingDuration(msLeft, {
+      hoursShort: t("hoursUnit"),
+      minutesShort: t("minutesUnit"),
+      remainingJoin: t("remainingJoin"),
+    });
+    return t("timeRemainingDuration", { duration: formatted });
+  })();
+
+  const activeBookingErrorMessage = (() => {
+    if (activeBookingError == null) {
+      return null;
+    }
+    if (typeof activeBookingError === "string") {
+      return activeBookingError.length > 0 ? activeBookingError : null;
+    }
+    if (
+      typeof activeBookingError === "object" &&
+      "detail" in activeBookingError
+    ) {
+      const detail = (activeBookingError as { detail: unknown }).detail;
+      if (typeof detail === "string" && detail.length > 0) {
+        return detail;
+      }
+    }
+    return JSON.stringify(activeBookingError);
+  })();
+
+  async function handleCopyBookingNumber() {
+    if (!booking) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(String(booking.id));
+      toast.success(t("bookingNumberCopied"));
+    } catch {
+      toast.error(t("bookingNumberCopyFailed"));
+    }
+  }
+
+  async function handleViewInvoice() {
     if (!booking) {
       return;
     }
@@ -69,11 +140,6 @@ export function PaymentStep({
       const popupBlocked =
         error instanceof Error && error.message === "popup_blocked";
 
-      if (popupBlocked) {
-        setPrintError(t("printPopupBlocked"));
-        return;
-      }
-
       try {
         printBookingReceipt({
           booking,
@@ -90,64 +156,107 @@ export function PaymentStep({
     }
   }
 
+  const locationLabel =
+    booking?.site_name && booking?.zone_name
+      ? t("locationZoneLine", {
+          site: booking.site_name,
+          zone: booking.zone_name,
+        })
+      : (booking?.site_name ?? booking?.zone_name ?? "—");
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-lg flex-col gap-5">
       {printError ? (
         <p className="text-sm font-medium text-destructive" role="alert">
           {printError}
         </p>
       ) : null}
-      {activeBookingError ? (
-        <Alert variant="destructive">{activeBookingError}</Alert>
+      {activeBookingErrorMessage ? (
+        <Alert variant="destructive">{activeBookingErrorMessage}</Alert>
       ) : null}
 
-      <div className="flex flex-col items-center gap-2 py-2 text-center">
-        <CheckCircle2
-          className="size-24 text-primary"
-          strokeWidth={1.75}
-          aria-hidden
+      <div className="flex flex-col items-center gap-2 pt-2 text-center">
+        <Image
+          src="/images/booking-confirmed.svg"
+          alt={t("bookingConfirmedIllustrationAlt")}
+          width={220}
+          height={160}
+          priority
+          className="h-auto w-full max-w-55"
         />
-        <p className="text-xl font-semibold text-foreground md:text-2xl">
-          {t("paymentSuccess")}
+        <h2 className="text-2xl font-bold text-primary-700 dark:text-primary-400">
+          {t("bookingConfirmedTitle")}
+        </h2>
+        <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+          {t("bookingConfirmedHint")}
         </p>
       </div>
-      {activeBooking && !activeBookingError ? (
-        <Alert
-          variant="warning"
-          className="my-4"
-          icon={
-            <AlertTriangle className="size-5 text-amber-600 dark:text-amber-400" />
-          }
-          title={t("activeBookingNoticeTitle")}
-        >
-          <div className="space-y-3">
-            <p>{t("activeBookingNotice")}</p>
 
-            <ActiveBookingCountdown expiresAt={activeBooking.expires_at} />
-          </div>
-        </Alert>
+      {booking?.expires_at ? (
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">
+            {t("timeRemainingLabel")}
+          </p>
+          <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
+            {remainingLine}
+          </p>
+        </div>
       ) : null}
-      <div className="flex w-full flex-col justify-between gap-2 md:flex-row">
+
+      {booking ? (
+        <div className="rounded-2xl border border-border bg-card px-4 py-1 sm:px-5">
+          <DetailRow label={t("plate-number")} value={booking.plate} />
+          <DetailRow label={t("location")} value={locationLabel} />
+          <DetailRow
+            label={t("bookingEndsLabel")}
+            value={
+              expiresAt
+                ? t("bookingEndsAt", {
+                    time: formatDateTime(new Date(expiresAt), locale),
+                  })
+                : "—"
+            }
+          />
+          <DetailRow
+            label={t("bookingNumber")}
+            value={
+              <button
+                type="button"
+                onClick={() => void handleCopyBookingNumber()}
+                className={cn(
+                  "inline-flex cursor-pointer items-center gap-1.5 rounded-md font-semibold text-primary-700",
+                  "hover:text-primary-600 dark:text-primary-400",
+                )}
+                aria-label={t("copyBookingNumber")}
+              >
+                <Copy className="size-4 shrink-0" aria-hidden />#{booking.id}
+              </button>
+            }
+          />
+        </div>
+      ) : null}
+
+      <div className="flex flex-col items-center gap-4 pt-1">
         <Button
           type="button"
-          variant="outline"
-          className="order-2 w-full rounded-full border-2 border-primary font-semibold text-primary hover:text-primary md:order-1 md:w-36"
-          onClick={onBack}
+          className="h-12 w-full rounded-full text-base font-semibold"
+          onClick={onExtend}
         >
-          {t("back")}
+          {t("extendBooking")}
         </Button>
         <Button
           type="button"
-          className="order-1 w-full rounded-full md:order-2 md:w-36"
+          variant="link"
+          className="h-auto gap-2 p-0 text-base font-semibold text-secondary-800"
           disabled={!booking || isPrinting}
-          onClick={() => void handlePrintReceipt()}
+          onClick={() => void handleViewInvoice()}
         >
           {isPrinting ? (
             <Loader2 className="size-4 animate-spin" aria-hidden />
           ) : (
-            <Printer className="size-4" aria-hidden />
+            <FileText className="size-4" aria-hidden />
           )}
-          {t("printReceipt")}
+          {t("viewInvoice")}
         </Button>
       </div>
     </div>

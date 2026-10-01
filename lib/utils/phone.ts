@@ -1,9 +1,10 @@
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 import {
-    getCountries,
-    getCountryCallingCode,
-    isSupportedCountry,
-    type Country,
-  } from "react-phone-number-input";
+  getCountries,
+  getCountryCallingCode,
+  isSupportedCountry,
+  type Country,
+} from "react-phone-number-input";
   
   export const DEFAULT_PHONE_COUNTRY = "+966";
   export const DEFAULT_COUNTRY: Country = "SA";
@@ -62,10 +63,26 @@ import {
     return `${phoneCountry} ${phoneNumber}`.trim();
   }
   
-  export function resolveCountryFromPhoneCountry(
-    phoneCountry: string,
-    preferred: Country = DEFAULT_COUNTRY,
-  ): Country {
+/** Maps active-booking E.164 (e.g. +966547200658) to form fields. */
+export function phoneFieldsFromE164(e164: string): {
+  phone_country: Country;
+  phone: string;
+} | null {
+  const parsed = parsePhoneNumberFromString(e164.trim());
+  if (!parsed?.isValid() || !parsed.country) {
+    return null;
+  }
+
+  return {
+    phone_country: parsed.country,
+    phone: parsed.nationalNumber,
+  };
+}
+
+export function resolveCountryFromPhoneCountry(
+  phoneCountry: string,
+  preferred: Country = DEFAULT_COUNTRY,
+): Country {
     const dial = phoneCountry.replace(/^\+/, "");
     if (
       isSupportedCountry(preferred) &&

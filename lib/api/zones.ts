@@ -85,11 +85,6 @@ export async function activateBooking(params: {
     },
   );
 
-  /** No active booking for this plate/zone — normal case, not an error. */
-  if (response.status === 404) {
-    return { booking: null };
-  }
-
   const data = (await response.json()) as
     | ActivateBookingResponse
     | ActivateBookingErrorResponse;

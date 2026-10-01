@@ -3,23 +3,23 @@
 import { useLocale, useTranslations } from "next-intl";
 import { parseAsInteger, useQueryState } from "nuqs";
 import { useEffect } from "react";
-import { ZoneCard } from "@/components/home/zone-card";
 import type { ParkingZone } from "@/lib/zones";
-import { Label } from "../ui/label";
-import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
-import {
-  CustomTimePicker,
-  MIN_CUSTOM_HOURS,
-  MAX_CUSTOM_HOURS,
-} from "@/components/home/custom-time-picker";
+
+import { MAX_CUSTOM_HOURS } from "@/components/home/custom-time-picker";
 import { ActiveBookingCountdown } from "@/components/home/active-booking-countdown";
-import { Alert } from "@/components/ui/alert";
+import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { AlertTriangle, Loader2 } from "lucide-react";
 import { BookingInput } from "@/lib/schemas/booking.schema";
 import { UseFormReturn } from "react-hook-form";
 import { getLocaleDirection } from "@/i18n/routing";
 import type { ActiveBooking } from "@/lib/types/zone";
+import { cn } from "@/lib/utils/cn";
+
+const MIN_SLOT_HOURS = 1;
+const HOUR_SLOTS = Array.from(
+  { length: MAX_CUSTOM_HOURS },
+  (_, index) => index + MIN_SLOT_HOURS,
+);
 
 type ZoneListProps = {
   zone: ParkingZone | null;
@@ -30,73 +30,59 @@ type ZoneListProps = {
   activeBooking?: ActiveBooking | null;
   activeBookingError?: string | null;
   onBack: () => void;
+  onContinue: () => void | Promise<void>;
 };
 
 export function ZoneList({
   zone,
   error,
-  checkoutError,
+
   form,
   isSubmitting = false,
   activeBooking,
   activeBookingError,
   onBack,
+  onContinue,
 }: ZoneListProps) {
   const t = useTranslations("HomePage");
   const locale = useLocale();
   const dir = getLocaleDirection(locale);
-  const [zoneId, setZoneId] = useQueryState(
-    "zone",
-    parseAsInteger.withOptions({
-      history: "replace",
-    }),
-  );
-
   const [hours, setHours] = useQueryState(
     "hours",
     parseAsInteger.withDefault(1).withOptions({
       history: "replace",
     }),
   );
-  // Sync zone from URL -> form
   useEffect(() => {
-    if (zone && zoneId !== zone.id) {
-      void setZoneId(zone.id);
-    }
-
     if (zone) {
       form.setValue("zone", zone.id, {
         shouldValidate: true,
         shouldDirty: true,
       });
     }
-  }, [zone, zoneId, setZoneId, form]);
+  }, [zone, form]);
 
   useEffect(() => {
-    if (hours && hours > 0) {
-      form.setValue("hours", hours, {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
+    if (!hours || hours <= 0) {
+      return;
     }
-  }, [hours, form]);
 
-  const handleTimeChange = (value: string) => {
-    const selectedHours = value === "select" ? 3 : Number(value);
+    const clamped = Math.min(MAX_CUSTOM_HOURS, Math.max(MIN_SLOT_HOURS, hours));
 
-    void setHours(selectedHours);
+    if (clamped !== hours) {
+      void setHours(clamped);
+    }
 
-    form.setValue("hours", selectedHours, {
+    form.setValue("hours", clamped, {
       shouldValidate: true,
       shouldDirty: true,
-      shouldTouch: true,
     });
-  };
+  }, [hours, form, setHours]);
 
   const setHoursValue = (nextHours: number) => {
     const clamped = Math.min(
       MAX_CUSTOM_HOURS,
-      Math.max(MIN_CUSTOM_HOURS, nextHours),
+      Math.max(MIN_SLOT_HOURS, nextHours),
     );
 
     void setHours(clamped);
@@ -108,111 +94,97 @@ export function ZoneList({
     });
   };
 
-  const customHours = hours && hours > 2 ? hours : MIN_CUSTOM_HOURS;
+  const selectedHours =
+    hours && hours >= MIN_SLOT_HOURS && hours <= MAX_CUSTOM_HOURS
+      ? hours
+      : MIN_SLOT_HOURS;
 
   return (
     <div>
-      <p className="max-w-xl text-xs leading-relaxed text-muted-foreground">
-        {t("zoneTimeDescription")}
-      </p>
-
       {error ? <p className="mt-4 text-xs text-destructive">{error}</p> : null}
 
-      {activeBookingError ? (
-        <Alert variant="destructive" className="mt-4">
-          {activeBookingError}
-        </Alert>
-      ) : null}
-
-      {activeBooking && !activeBookingError ? (
-        <Alert
-          variant="warning"
-          className="mt-4"
-          icon={
-            <AlertTriangle className="size-5 text-amber-600 dark:text-amber-400" />
-          }
-          title={t("activeBookingNoticeTitle")}
-        >
-          <div className="space-y-3">
-            <p>{t("activeBookingNotice")}</p>
-            <ActiveBookingCountdown expiresAt={activeBooking.expires_at} />
-          </div>
-        </Alert>
-      ) : null}
-
-      {zone ? (
-        <div className="mt-4 flex flex-col gap-4">
-          <ZoneCard zone={zone} />
-
-          <div className="flex flex-col gap-2">
-            <h2 className="text-sm font-bold md:text-lg">
-              {t("select-time-slot")}
-            </h2>
-
-            <p className="max-w-xl text-xs leading-relaxed text-muted-foreground">
-              {t("selectTimeDescription")}
-            </p>
-
-            <RadioGroup
-              dir={dir}
-              value={
-                hours === 1
-                  ? "1"
-                  : hours === 2
-                    ? "2"
-                    : hours
-                      ? "select"
-                      : undefined
-              }
-              onValueChange={handleTimeChange}
-              className="grid w-full grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 lg:gap-4"
-            >
-              <Label
-                htmlFor="1"
-                className="flex w-full cursor-pointer items-center gap-2 rounded-lg border p-4 has-data-[state=checked]:border-primary"
-              >
-                <RadioGroupItem value="1" id="1" />
-                <span>{t("oneHour")}</span>
-              </Label>
-
-              <Label
-                htmlFor="2"
-                className="flex w-full cursor-pointer items-center gap-2 rounded-lg border p-4 has-data-[state=checked]:border-primary"
-              >
-                <RadioGroupItem value="2" id="2" />
-                <span>{t("twoHours")}</span>
-              </Label>
-
-              <Label
-                htmlFor="select"
-                className="flex w-full cursor-pointer items-center gap-2 rounded-lg border p-4 has-data-[state=checked]:border-primary"
-              >
-                <RadioGroupItem value="select" id="select" />
-                <span>{t("select")}</span>
-              </Label>
-            </RadioGroup>
-
-            {hours && hours > 2 ? (
-              <CustomTimePicker
-                hours={customHours}
-                onHoursChange={setHoursValue}
-              />
-            ) : null}
-
-            {/* Validation message for hours */}
-            {form.formState.errors.hours && (
-              <p className="text-sm font-medium text-destructive">
-                {form.formState.errors.hours.message}
-              </p>
+      <div className="mt-4 flex w-full flex-col gap-4">
+        <div className="flex w-full flex-col gap-2">
+          <div className="flex w-full items-start justify-between gap-2">
+            {activeBooking && !activeBookingError ? (
+              <h2 className="text-sm font-bold md:text-lg">
+                {t("extendParkingDurationTitle")}
+              </h2>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <h2 className="text-sm font-bold md:text-lg">
+                  {t("parkingDurationTitle")}
+                </h2>
+                <p className="max-w-xl text-xs leading-relaxed text-muted-foreground">
+                  {t("parkingDurationDescription")}
+                </p>
+              </div>
             )}
+
+            <Badge
+              variant="secondary"
+              className="mt-0.5 tabular-nums bg-secondary-50 py-3 px-4 text-secondary-800"
+            >
+              {activeBooking && !activeBookingError
+                ? t("activeBookingBadge")
+                : t("newBooking")}
+            </Badge>
           </div>
+
+          {activeBooking && !activeBookingError ? (
+            <div className="mt-4">
+              <ActiveBookingCountdown activeBooking={activeBooking} />
+            </div>
+          ) : null}
+          <div className="w-full rounded-2xl border border-border bg-card p-3 sm:p-4">
+            <div
+              role="radiogroup"
+              aria-label={t("select-time-slot")}
+              dir={dir}
+              className="grid w-full grid-cols-4 gap-2 sm:gap-3"
+            >
+              {HOUR_SLOTS.map((slot) => {
+                const isSelected = selectedHours === slot;
+
+                return (
+                  <Button
+                    key={slot}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    variant="outline"
+                    className={cn(
+                      "h-12 w-full min-w-0 rounded-xl border text-base font-semibold shadow-none sm:h-14 sm:text-lg",
+                      isSelected
+                        ? "border-primary-500 bg-primary-500 text-white hover:bg-primary-600 hover:text-white dark:border-primary-400 dark:bg-primary-500 dark:text-primary-foreground dark:hover:bg-primary-400 dark:hover:text-primary-foreground"
+                        : "border-border bg-background text-foreground hover:bg-muted dark:border-primary-800/60 dark:bg-primary-950/35 dark:text-primary-100 dark:hover:bg-primary-900/45",
+                    )}
+                    onClick={() => setHoursValue(slot)}
+                  >
+                    {slot}
+                  </Button>
+                );
+              })}
+            </div>
+
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              {t("maxTimeSelection")}
+            </p>
+          </div>
+
+          {form.formState.errors.hours ? (
+            <p className="text-sm font-medium text-destructive">
+              {form.formState.errors.hours.message}
+            </p>
+          ) : null}
         </div>
-      ) : null}
+      </div>
+
       <div className="mt-4 flex w-full flex-col gap-2 md:flex-row md:justify-between">
         <Button
           type="button"
-          variant="outline"
-          className="w-full rounded-full border-2 border-primary font-semibold text-primary hover:text-primary md:w-36"
+          variant="ghost"
+          className="w-full text-base hover:text-secondary-600 hover:bg-transparent rounded-full   font-semibold text-secondary-800 md:w-36"
           onClick={onBack}
           disabled={isSubmitting}
         >
@@ -220,14 +192,11 @@ export function ZoneList({
         </Button>
         <Button
           className="w-full rounded-full md:w-36"
-          type="submit"
+          type="button"
           disabled={isSubmitting}
+          onClick={() => void onContinue()}
         >
-          {isSubmitting ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            t("submit")
-          )}
+          {t("Continue")}
         </Button>
       </div>
     </div>

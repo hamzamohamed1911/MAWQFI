@@ -18,8 +18,11 @@ import Image from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Button } from "../ui/button";
 import { Loader2 } from "lucide-react";
+import { ZoneCard } from "./zone-card";
+import { ParkingZone } from "@/lib/zones";
 
 type PersonalDataProps = {
+  zone: ParkingZone | null;
   form: UseFormReturn<BookingInput>;
   isSubmitting: boolean;
   onContinue: () => void | Promise<void>;
@@ -28,6 +31,7 @@ type PersonalDataProps = {
 const PersonalData = ({
   form,
   isSubmitting,
+  zone,
   onContinue,
 }: PersonalDataProps) => {
   type Country = CountryCode;
@@ -69,10 +73,109 @@ const PersonalData = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="lg:text-lg md:text-base text-sm text-muted-foreground">
-        {t("personalDataStepHint")}
-      </p>
+      {zone ? <ZoneCard zone={zone} /> : null}
 
+      <FormField
+        control={form.control}
+        name="plate"
+        render={() => (
+          <FormItem>
+            <div className="flex items-center justify-start gap-1">
+              <FormLabel className="font-semibold text-lg">
+                {t("plate-number")}
+              </FormLabel>
+
+              <span className="text-2xl text-red-500">*</span>
+            </div>
+
+            {/* Plate layout matches the physical Saudi plate — always LTR */}
+            <div dir="ltr" className="w-full max-w-full">
+              <FormControl>
+                <div className="flex w-fit overflow-hidden rounded-xl border-2 border-black dark:border-white">
+                  {/* Main plate */}
+                  <div className="grid md:w-90 w-full grid-cols-2 grid-rows-2">
+                    {/* Numbers Input */}
+                    <div className="flex items-center justify-center border-b-2 border-r-2 border-black dark:border-white">
+                      <Input
+                        value={numbers}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, "");
+
+                          setNumbers(value);
+
+                          form.setValue("plate", `${value}${letters}`, {
+                            shouldValidate: true,
+                            shouldDirty: true,
+                          });
+                        }}
+                        inputMode="numeric"
+                        maxLength={4}
+                        placeholder="...."
+                        disabled={continueDisabled}
+                        className="h-full w-full border-0 text-center lg:text-2xl md:text-xl text-lg shadow-none focus-visible:ring-0"
+                      />
+                    </div>
+
+                    {/* Letters Input */}
+                    <div className="flex items-center justify-center border-b-2 border-black dark:border-white">
+                      <Input
+                        value={letters}
+                        onChange={(e) => {
+                          const value = e.target.value
+                            .replace(/[^\p{L}]/gu, "")
+                            .toUpperCase();
+
+                          setLetters(value);
+
+                          form.setValue("plate", `${numbers}${value}`, {
+                            shouldValidate: true,
+                            shouldDirty: true,
+                          });
+                        }}
+                        maxLength={3}
+                        placeholder="A A A"
+                        disabled={continueDisabled}
+                        className="h-full w-full border-0 text-center lg:text-2xl md:text-xl text-lg shadow-none focus-visible:ring-0"
+                      />
+                    </div>
+
+                    {/* Numbers Result */}
+                    <div className="flex items-center justify-center border-r-2 border-black dark:border-white lg:text-2xl md:text-xl text-lg text-gray-300">
+                      {numbers || "0000"}
+                    </div>
+
+                    {/* Letters Result */}
+                    <div className="flex items-center justify-center lg:text-2xl md:text-xl text-lg text-gray-300">
+                      {letters || "AAA"}
+                    </div>
+                  </div>
+
+                  {/* Saudi Section */}
+                  <div className="flex w-13.75 flex-col items-center justify-center gap-1 border-l-2 border-black dark:border-white py-2">
+                    <Image
+                      alt={t("saudiArabiaAlt")}
+                      width={25}
+                      height={25}
+                      src="/icons/Saudi_Arabia.svg"
+                    />
+
+                    <p className="text-[7px] font-semibold">السعودية</p>
+
+                    <span className="flex flex-col items-center text-[10px] leading-3">
+                      <span>K</span>
+                      <span>S</span>
+                      <span>A</span>
+                    </span>
+
+                    <span className="size-2 rounded-full bg-black dark:bg-white" />
+                  </div>
+                </div>
+              </FormControl>
+              <FormMessage />
+            </div>
+          </FormItem>
+        )}
+      />
       <FormField
         control={form.control}
         name="phone"
@@ -108,151 +211,6 @@ const PersonalData = ({
           </FormItem>
         )}
       />
-
-      <FormField
-        control={form.control}
-        name="plate"
-        render={() => (
-          <FormItem>
-            <div className="flex items-center justify-start gap-1">
-              <FormLabel className="font-semibold">
-                {t("plate-number")}
-              </FormLabel>
-
-              <span className="text-2xl text-red-500">*</span>
-            </div>
-
-            <p className="text-xs text-muted-foreground">{t("plate-order")}</p>
-            {/* Plate layout matches the physical Saudi plate — always LTR */}
-            <div dir="ltr" className="w-full max-w-full">
-              <Tabs defaultValue="saudi" className="w-full">
-                <TabsList className="grid w-fit grid-cols-2 gap-0">
-                  <TabsTrigger
-                    value="saudi"
-                    className="cursor-pointer text-xs font-semibold rounded-s-2xl border p-2 text-center justify-center items-center data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                  >
-                    {t("plateTabSaudi")}
-                  </TabsTrigger>
-
-                  <TabsTrigger
-                    value="other-regions"
-                    className="cursor-pointer text-xs font-semibold rounded-e-2xl border p-2 text-center justify-center items-center data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                  >
-                    {t("plateTabOtherRegions")}
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="saudi">
-                  <FormControl>
-                    <div className="flex w-fit overflow-hidden rounded-xl border-2 border-black dark:border-white">
-                      {/* Main plate */}
-                      <div className="grid md:w-90 w-full grid-cols-2 grid-rows-2">
-                        {/* Numbers Input */}
-                        <div className="flex items-center justify-center border-b-2 border-r-2 border-black dark:border-white">
-                          <Input
-                            value={numbers}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/\D/g, "");
-
-                              setNumbers(value);
-
-                              form.setValue("plate", `${value}${letters}`, {
-                                shouldValidate: true,
-                                shouldDirty: true,
-                              });
-                            }}
-                            inputMode="numeric"
-                            maxLength={4}
-                            placeholder="...."
-                            disabled={continueDisabled}
-                            className="h-full w-full border-0 text-center lg:text-2xl md:text-xl text-lg shadow-none focus-visible:ring-0"
-                          />
-                        </div>
-
-                        {/* Letters Input */}
-                        <div className="flex items-center justify-center border-b-2 border-black dark:border-white">
-                          <Input
-                            value={letters}
-                            onChange={(e) => {
-                              const value = e.target.value
-                                .replace(/[^\p{L}]/gu, "")
-                                .toUpperCase();
-
-                              setLetters(value);
-
-                              form.setValue("plate", `${numbers}${value}`, {
-                                shouldValidate: true,
-                                shouldDirty: true,
-                              });
-                            }}
-                            maxLength={3}
-                            placeholder="A A A"
-                            disabled={continueDisabled}
-                            className="h-full w-full border-0 text-center lg:text-2xl md:text-xl text-lg shadow-none focus-visible:ring-0"
-                          />
-                        </div>
-
-                        {/* Numbers Result */}
-                        <div className="flex items-center justify-center border-r-2 border-black dark:border-white lg:text-2xl md:text-xl text-lg text-gray-300">
-                          {numbers || "0000"}
-                        </div>
-
-                        {/* Letters Result */}
-                        <div className="flex items-center justify-center lg:text-2xl md:text-xl text-lg text-gray-300">
-                          {letters || "AAA"}
-                        </div>
-                      </div>
-
-                      {/* Saudi Section */}
-                      <div className="flex w-13.75 flex-col items-center justify-center gap-1 border-l-2 border-black dark:border-white py-2">
-                        <Image
-                          alt={t("saudiArabiaAlt")}
-                          width={25}
-                          height={25}
-                          src="/icons/Saudi_Arabia.svg"
-                        />
-
-                        <p className="text-[7px] font-semibold">السعودية</p>
-
-                        <span className="flex flex-col items-center text-[10px] leading-3">
-                          <span>K</span>
-                          <span>S</span>
-                          <span>A</span>
-                        </span>
-
-                        <span className="size-2 rounded-full bg-black dark:bg-white" />
-                      </div>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </TabsContent>
-
-                <TabsContent value="other-regions">
-                  <FormField
-                    control={form.control}
-                    name="plate"
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormControl className="w-full">
-                          <Input
-                            {...field}
-                            placeholder={t("plate-number")}
-                            disabled={continueDisabled}
-                            className="h-12 w-full rounded-xl ring-primary md:max-w-72"
-                          />
-                        </FormControl>
-
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </TabsContent>
-              </Tabs>
-            </div>
-          </FormItem>
-        )}
-      />
-
       <div className="flex w-full justify-end">
         <Button
           type="button"
@@ -260,11 +218,7 @@ const PersonalData = ({
           disabled={continueDisabled}
           onClick={() => void handleContinue()}
         >
-          {continueDisabled ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            t("next")
-          )}
+          {t("Continue")}
         </Button>
       </div>
     </div>

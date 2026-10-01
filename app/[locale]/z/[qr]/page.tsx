@@ -1,7 +1,6 @@
 import { hasLocale } from "next-intl";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { BackToScan } from "@/components/home/back-to-scan";
 import { BookingPanel } from "@/components/home/booking-panel";
 import { routing } from "@/i18n/routing";
@@ -38,29 +37,21 @@ export async function generateMetadata({
 
 type BookingPageProps = {
   params: Promise<{ locale: string; qr: string }>;
-  searchParams: Promise<{ plate?: string; zone?: string }>;
+  searchParams: Promise<{ plate?: string }>;
 };
 
 export default async function BookingPage({
   params,
   searchParams,
 }: BookingPageProps) {
-  const { locale, qr } = await params;
-  const { plate, zone: zoneParam } = await searchParams;
-
-  if (!hasLocale(routing.locales, locale)) {
-    notFound();
-  }
-
-  setRequestLocale(locale);
+  const { qr } = await params;
+  const { plate } = await searchParams;
 
   return (
-    <main className="relative flex flex-1 flex-col px-4  py-8 ">
+    <main className="relative flex flex-1 flex-col px-4  pb-8 pt-4">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
         <BackToScan />
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
-          <BookingPanel qrId={qr} plate={plate} zoneId={zoneParam} />
-        </div>
+        <BookingPanel qrId={qr} plate={plate} />
       </div>
     </main>
   );

@@ -1,4 +1,4 @@
-export const BOOKING_STEPS = ["1", "2", "3"] as const;
+export const BOOKING_STEPS = ["1", "2", "3", "4"] as const;
 
 export type BookingStep = (typeof BOOKING_STEPS)[number];
 
