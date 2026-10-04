@@ -9,14 +9,6 @@ type HomePageProps = {
 };
 
 export default async function HomePage({ params }: HomePageProps) {
-  const { locale } = await params;
-
-  if (!hasLocale(routing.locales, locale)) {
-    notFound();
-  }
-
-  setRequestLocale(locale);
-
   return (
     <main className="relative flex flex-1 flex-col items-center justify-center bg-background px-4 py-8 sm:px-6 sm:py-12 dark:bg-background">
       <HomeLanding />
