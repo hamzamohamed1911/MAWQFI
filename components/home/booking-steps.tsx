@@ -311,7 +311,6 @@ export function BookingSteps({
                   activeBooking={activeBooking}
                   checkoutResult={checkoutResult}
                   confirmResult={confirmResult}
-                  activeBookingError={activeBookingError}
                   onExtend={handleExtendBooking}
                 />
               ) : null}
