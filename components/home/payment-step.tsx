@@ -7,7 +7,6 @@ import { Copy, FileText, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 
-import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { printBookingBillFromApi } from "@/lib/api/download-booking-bill";
 import { useNow } from "@/lib/hooks/use-now";

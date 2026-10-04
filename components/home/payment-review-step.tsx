@@ -70,7 +70,7 @@ export function PaymentReviewStep({
             variant="outline"
             className={cn(
               "shrink-0 gap-1 text-[10px] border-primary-200 bg-primary-50 py-2 text-primary-700 w-auto",
-              "dark:border-primary-800 dark:bg-primary-950/40 dark:text-primary-200",
+              "dark:border-primary-700 dark:bg-primary-900/50 dark:text-primary-200",
             )}
           >
             <ShieldCheck className="size-4" aria-hidden />
@@ -90,7 +90,7 @@ export function PaymentReviewStep({
       <div
         className={cn(
           "rounded-2xl border border-primary-200/80 bg-primary-50/80 p-4 sm:p-5",
-          "dark:border-primary-800/50 dark:bg-primary-950/35",
+          "dark:border-primary-700/60 dark:bg-primary-900/40",
         )}
       >
         <p className="text-sm font-semibold text-primary-700 dark:text-primary-300">
@@ -99,7 +99,7 @@ export function PaymentReviewStep({
         <p className="mt-1 text-3xl font-bold tabular-nums text-foreground">
           {currency} {total.toFixed(2)}
         </p>
-        <div className="mt-4 space-y-2 border-t border-primary-200/60 pt-4 dark:border-primary-800/40">
+        <div className="mt-4 space-y-2 border-t border-primary-200/60 pt-4 dark:border-primary-700/50">
           <DetailRow
             label={t("duration")}
             value={`${hours.toFixed(2)} ${hourLabel}`}
