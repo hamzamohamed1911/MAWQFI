@@ -171,8 +171,8 @@ const PersonalData = ({
                   </div>
                 </div>
               </FormControl>
-              <FormMessage />
             </div>
+            <FormMessage />
           </FormItem>
         )}
       />
