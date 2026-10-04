@@ -40,7 +40,10 @@ import { BookingSummary } from "./booking-summary";
 import { BookingSidebar } from "./booking-sidebar";
 import { PaymentReviewStep } from "./payment-review-step";
 import { PaymentStep } from "./payment-step";
-import { ZoneLocationGate } from "./zone-location-gate";
+import {
+  LocationPermissionNotice,
+  ZoneLocationGate,
+} from "./zone-location-gate";
 import { useZoneGeoStatus } from "@/lib/hooks/use-zone-geo-status";
 import {
   NotFoundView,
@@ -294,6 +297,13 @@ export function BookingSteps({
           className="w-full text-start"
         >
           <BookingStepNav step={step} />
+
+          {showBookingSummary && !showLocationGate && geo.state === "failed" ? (
+            <LocationPermissionNotice
+              locating={geo.locating}
+              onRetry={geo.redetect}
+            />
+          ) : null}
 
           {showLocationGate ? (
             <ZoneLocationGate

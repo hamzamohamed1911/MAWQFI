@@ -1,11 +1,46 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { Loader2, MapPin } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import type { GeoStatus } from "@/lib/hooks/use-zone-geo-status";
 import { formatDistanceMeters } from "@/lib/utils/format-distance";
+
+type LocationPermissionNoticeProps = {
+  locating: boolean;
+  onRetry: () => void;
+};
+
+/** Shown when the browser never returned a position, so the outside-zone screen cannot run. */
+export function LocationPermissionNotice({
+  locating,
+  onRetry,
+}: LocationPermissionNoticeProps) {
+  const t = useTranslations("HomePage");
+
+  return (
+    <Alert
+      variant="warning"
+      className="mb-4"
+      icon={<MapPin className="size-4" aria-hidden />}
+      title={t("geoDeniedTitle")}
+    >
+      <p>{t("geoDeniedBody")}</p>
+      <Button
+        type="button"
+        variant="link"
+        className="h-auto px-0 text-foreground"
+        disabled={locating}
+        onClick={onRetry}
+      >
+        {locating ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+        {t("geoRedetect")}
+      </Button>
+    </Alert>
+  );
+}
 
 type ZoneLocationGateProps = {
   geo: GeoStatus;
