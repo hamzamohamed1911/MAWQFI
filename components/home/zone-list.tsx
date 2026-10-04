@@ -191,7 +191,7 @@ export function ZoneList({
           {t("back")}
         </Button>
         <Button
-          className="w-full rounded-full md:w-36"
+          className="w-full rounded-full md:w-36 h-12  text-base font-semibold"
           type="button"
           disabled={isSubmitting}
           onClick={() => void onContinue()}

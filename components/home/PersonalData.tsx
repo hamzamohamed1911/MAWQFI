@@ -214,7 +214,7 @@ const PersonalData = ({
       <div className="flex w-full justify-end">
         <Button
           type="button"
-          className="w-full rounded-full md:w-36"
+          className="w-full rounded-full md:w-36 h-12  text-base font-semibold"
           disabled={continueDisabled}
           onClick={() => void handleContinue()}
         >

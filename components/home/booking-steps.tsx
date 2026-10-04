@@ -329,52 +329,55 @@ export function BookingSteps({
             />
           ) : (
             BOOKING_STEPS.map((value) => (
-            <TabsContent key={value} value={value}>
-              {value === "1" || value === "2" ? (
-                <Form {...form}>
-                  <form className="space-y-4" noValidate>
-                    {value === "1" ? (
-                      <PersonalData
-                        zone={zone}
-                        isSubmitting={false}
-                        form={form}
-                        onContinue={() => void handleContinueFromPersonalData()}
-                      />
-                    ) : (
-                      <ZoneList
-                        form={form}
-                        zone={zone}
-                        checkoutError={checkoutError}
-                        isSubmitting={false}
-                        activeBooking={activeBooking}
-                        activeBookingError={activeBookingError}
-                        onBack={handleBackToPersonalData}
-                        onContinue={() => void handleContinueFromDuration()}
-                      />
-                    )}
-                  </form>
-                </Form>
-              ) : null}
-              {value === "3" ? (
-                <PaymentReviewStep
-                  zone={zone}
-                  form={form}
-                  checkoutError={checkoutError}
-                  isSubmitting={isSubmitting}
-                  onBack={handleBackToDuration}
-                  onPay={handlePay}
-                />
-              ) : null}
-              {value === "4" ? (
-                <PaymentStep
-                  activeBooking={activeBooking}
-                  checkoutResult={checkoutResult}
-                  confirmResult={confirmResult}
-                  onExtend={handleExtendBooking}
-                />
-              ) : null}
-            </TabsContent>
-          ))
+              <TabsContent key={value} value={value}>
+                {value === "1" || value === "2" ? (
+                  <Form {...form}>
+                    <form className="space-y-4" noValidate>
+                      {value === "1" ? (
+                        <PersonalData
+                          zone={zone}
+                          isSubmitting={false}
+                          form={form}
+                          onContinue={() =>
+                            void handleContinueFromPersonalData()
+                          }
+                        />
+                      ) : (
+                        <ZoneList
+                          form={form}
+                          zone={zone}
+                          checkoutError={checkoutError}
+                          isSubmitting={false}
+                          activeBooking={activeBooking}
+                          activeBookingError={activeBookingError}
+                          onBack={handleBackToPersonalData}
+                          onContinue={() => void handleContinueFromDuration()}
+                        />
+                      )}
+                    </form>
+                  </Form>
+                ) : null}
+                {value === "3" ? (
+                  <PaymentReviewStep
+                    zone={zone}
+                    form={form}
+                    checkoutError={checkoutError}
+                    isSubmitting={isSubmitting}
+                    onBack={handleBackToDuration}
+                    onPay={handlePay}
+                  />
+                ) : null}
+                {value === "4" ? (
+                  <PaymentStep
+                    activeBooking={activeBooking}
+                    checkoutResult={checkoutResult}
+                    confirmResult={confirmResult}
+                    onExtend={handleExtendBooking}
+                    onStartBooking={handleBackToPersonalData}
+                  />
+                ) : null}
+              </TabsContent>
+            ))
           )}
         </Tabs>
       </section>

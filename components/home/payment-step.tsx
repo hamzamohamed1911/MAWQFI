@@ -1,19 +1,15 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Copy, FileText, Loader2 } from "lucide-react";
+import { CalendarX, Copy } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { printBookingBillFromApi } from "@/lib/api/download-booking-bill";
+import { ViewInvoiceButton } from "@/components/home/view-invoice-button";
 import { useNow } from "@/lib/hooks/use-now";
-import {
-  paymentFromBooking,
-  printBookingReceipt,
-} from "@/lib/print-booking-receipt";
 import type {
   ActiveBooking,
   BookingQuoteResponse,
@@ -28,6 +24,7 @@ type PaymentStepProps = {
   checkoutResult: BookingQuoteResponse | null;
   confirmResult: ConfirmBookingResponse | null;
   onExtend: () => void;
+  onStartBooking: () => void;
 };
 
 function DetailRow({ label, value }: { label: string; value: ReactNode }) {
@@ -43,13 +40,12 @@ export function PaymentStep({
   activeBooking,
   confirmResult,
   onExtend,
+  onStartBooking,
 }: PaymentStepProps) {
   const t = useTranslations("HomePage");
   const locale = useLocale();
   const booking = confirmResult?.booking ?? activeBooking;
   const payment = confirmResult?.payment;
-  const [isPrinting, setIsPrinting] = useState(false);
-  const [printError, setPrintError] = useState<string | null>(null);
 
   const expiresAt = booking?.expires_at;
   const targetMs = useMemo(
@@ -87,53 +83,6 @@ export function PaymentStep({
     }
   }
 
-  async function handleViewInvoice() {
-    if (!booking) {
-      return;
-    }
-
-    setIsPrinting(true);
-    setPrintError(null);
-
-    const receiptLabels = {
-      title: t("receiptTitle"),
-      bookingId: t("receiptBookingId"),
-      site: t("receiptSite"),
-      zone: t("receiptZone"),
-      plate: t("plate-number"),
-      duration: t("duration"),
-      amount: t("total"),
-      reference: t("paymentReference"),
-      starts: t("receiptStarts"),
-      expires: t("receiptExpires"),
-      hourUnit: t("hourUnit"),
-      hoursUnit: t("hoursUnit"),
-      minuteUnit: t("minuteUnit"),
-      minutesUnit: t("minutesUnit"),
-    };
-
-    try {
-      await printBookingBillFromApi(booking.id, booking.plate);
-    } catch (error) {
-      const popupBlocked =
-        error instanceof Error && error.message === "popup_blocked";
-
-      try {
-        printBookingReceipt({
-          booking,
-          payment: payment ?? paymentFromBooking(booking),
-          locale,
-          brandName: t("title"),
-          labels: receiptLabels,
-        });
-      } catch {
-        setPrintError(t("printReceiptError"));
-      }
-    } finally {
-      setIsPrinting(false);
-    }
-  }
-
   const locationLabel =
     booking?.site_name && booking?.zone_name
       ? t("locationZoneLine", {
@@ -142,14 +91,31 @@ export function PaymentStep({
         })
       : (booking?.site_name ?? booking?.zone_name ?? "—");
 
+  if (!booking) {
+    return (
+      <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-4 py-10 text-center">
+        <div className="flex size-20 items-center justify-center rounded-full bg-primary-50 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300">
+          <CalendarX className="size-10" aria-hidden />
+        </div>
+        <h2 className="text-xl font-bold text-foreground">
+          {t("noBookingTitle")}
+        </h2>
+        <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+          {t("noBookingHint")}
+        </p>
+        <Button
+          type="button"
+          className="mt-2 h-12 w-full rounded-full text-base font-semibold"
+          onClick={onStartBooking}
+        >
+          {t("startNewBooking")}
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-5">
-      {printError ? (
-        <p className="text-sm font-medium text-destructive" role="alert">
-          {printError}
-        </p>
-      ) : null}
-
       <div className="flex flex-col items-center gap-2 pt-2 text-center">
         <Image
           src="/images/booking-confirmed.svg"
@@ -167,7 +133,7 @@ export function PaymentStep({
         </p>
       </div>
 
-      {booking?.expires_at ? (
+      {expiresAt ? (
         <div className="text-center">
           <p className="text-sm text-muted-foreground">
             {t("timeRemainingLabel")}
@@ -178,38 +144,36 @@ export function PaymentStep({
         </div>
       ) : null}
 
-      {booking ? (
-        <div className="rounded-2xl border border-border bg-card px-4 py-1 sm:px-5">
-          <DetailRow label={t("plate-number")} value={booking.plate} />
-          <DetailRow label={t("location")} value={locationLabel} />
-          <DetailRow
-            label={t("bookingEndsLabel")}
-            value={
-              expiresAt
-                ? t("bookingEndsAt", {
-                    time: formatDateTime(new Date(expiresAt), locale),
-                  })
-                : "—"
-            }
-          />
-          <DetailRow
-            label={t("bookingNumber")}
-            value={
-              <button
-                type="button"
-                onClick={() => void handleCopyBookingNumber()}
-                className={cn(
-                  "inline-flex cursor-pointer items-center gap-1.5 rounded-md font-semibold text-primary-700",
-                  "hover:text-primary-600 dark:text-primary-400",
-                )}
-                aria-label={t("copyBookingNumber")}
-              >
-                <Copy className="size-4 shrink-0" aria-hidden />#{booking.id}
-              </button>
-            }
-          />
-        </div>
-      ) : null}
+      <div className="rounded-2xl border border-border bg-card px-4 py-1 sm:px-5">
+        <DetailRow label={t("plate-number")} value={booking.plate} />
+        <DetailRow label={t("location")} value={locationLabel} />
+        <DetailRow
+          label={t("bookingEndsLabel")}
+          value={
+            expiresAt
+              ? t("bookingEndsAt", {
+                  time: formatDateTime(new Date(expiresAt), locale),
+                })
+              : "—"
+          }
+        />
+        <DetailRow
+          label={t("bookingNumber")}
+          value={
+            <button
+              type="button"
+              onClick={() => void handleCopyBookingNumber()}
+              className={cn(
+                "inline-flex cursor-pointer items-center gap-1.5 rounded-md font-semibold text-primary-700",
+                "hover:text-primary-600 dark:text-primary-400",
+              )}
+              aria-label={t("copyBookingNumber")}
+            >
+              <Copy className="size-4 shrink-0" aria-hidden />#{booking.id}
+            </button>
+          }
+        />
+      </div>
 
       <div className="flex flex-col items-center gap-4 pt-1">
         <Button
@@ -219,20 +183,7 @@ export function PaymentStep({
         >
           {t("extendBooking")}
         </Button>
-        <Button
-          type="button"
-          variant="link"
-          className="h-auto gap-2 p-0 text-base font-semibold text-secondary-800"
-          disabled={!booking || isPrinting}
-          onClick={() => void handleViewInvoice()}
-        >
-          {isPrinting ? (
-            <Loader2 className="size-4 animate-spin" aria-hidden />
-          ) : (
-            <FileText className="size-4" aria-hidden />
-          )}
-          {t("viewInvoice")}
-        </Button>
+        <ViewInvoiceButton booking={booking} payment={payment} />
       </div>
     </div>
   );
