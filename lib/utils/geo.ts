@@ -37,7 +37,7 @@ export type GeoError = {
 
 export type GeoResult = GeoSuccess | GeoError;
 
-export function locate(timeoutMs = 12_000): Promise<GeoResult> {
+export function locate(timeoutMs = 12_000, maximumAge = 30_000): Promise<GeoResult> {
   if (typeof navigator === "undefined" || !navigator.geolocation) {
     return Promise.resolve({ ok: false, reason: "unsupported" });
   }
@@ -62,7 +62,7 @@ export function locate(timeoutMs = 12_000): Promise<GeoResult> {
           resolve({ ok: false, reason: "unavailable" });
         }
       },
-      { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 30_000 },
+      { enableHighAccuracy: true, timeout: timeoutMs, maximumAge },
     );
   });
 }

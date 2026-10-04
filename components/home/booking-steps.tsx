@@ -12,7 +12,7 @@ import {
   DEFAULT_BOOKING_STEP,
   type BookingStep,
 } from "@/lib/booking-steps";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { getLocaleDirection } from "@/i18n/routing";
 import type { ParkingZone } from "@/lib/zones";
 import { cn } from "@/lib/utils/cn";
@@ -40,7 +40,13 @@ import { BookingSummary } from "./booking-summary";
 import { BookingSidebar } from "./booking-sidebar";
 import { PaymentReviewStep } from "./payment-review-step";
 import { PaymentStep } from "./payment-step";
+import { ZoneLocationGate } from "./zone-location-gate";
 import { useZoneGeoStatus } from "@/lib/hooks/use-zone-geo-status";
+import {
+  NotFoundView,
+  notFoundHomeButtonClassName,
+} from "@/components/layout/not-found-view";
+import { NotFoundLogo } from "@/components/layout/not-found-logo";
 
 type BookingStepsProps = {
   zone: ParkingZone | null;
@@ -56,6 +62,8 @@ export function BookingSteps({
   activeBookingError = null,
 }: BookingStepsProps) {
   const t = useTranslations("HomePage");
+  const tHeader = useTranslations("Header");
+  const tNotFound = useTranslations("NotFound");
   const locale = useLocale();
   const router = useRouter();
   const dir = getLocaleDirection(locale);
@@ -249,12 +257,33 @@ export function BookingSteps({
 
   const showBookingSummary = step === "1" || step === "2";
   const geo = useZoneGeoStatus(zone);
+  const [locationConfirmed, setLocationConfirmed] = useState(false);
+  const showLocationGate =
+    step === "1" && !locationConfirmed && geo.inside === false;
+
+  if (zoneError) {
+    return (
+      <NotFoundView
+        className="min-h-[50dvh]"
+        title={t("zonesEmpty")}
+        description={zoneError}
+        logo={<NotFoundLogo alt={tHeader("logoAlt")} />}
+        action={
+          <Link href="/" className={notFoundHomeButtonClassName()}>
+            {tNotFound("backHome")}
+          </Link>
+        }
+      />
+    );
+  }
 
   return (
     <div
       className={cn(
         "grid gap-6 lg:items-start",
-        showBookingSummary && "lg:grid-cols-[minmax(0,1fr)_20rem]",
+        showBookingSummary &&
+          !showLocationGate &&
+          "lg:grid-cols-[minmax(0,1fr)_20rem]",
       )}
     >
       <section className="rounded-2xl  md:p-4 p-0 text-start text-card-foreground md:shadow-lg shadow-none ">
@@ -266,7 +295,15 @@ export function BookingSteps({
         >
           <BookingStepNav step={step} />
 
-          {BOOKING_STEPS.map((value) => (
+          {showLocationGate ? (
+            <ZoneLocationGate
+              geo={geo}
+              locating={geo.locating}
+              onContinue={() => setLocationConfirmed(true)}
+              onRedetect={geo.redetect}
+            />
+          ) : (
+            BOOKING_STEPS.map((value) => (
             <TabsContent key={value} value={value}>
               {value === "1" || value === "2" ? (
                 <Form {...form}>
@@ -274,7 +311,6 @@ export function BookingSteps({
                     {value === "1" ? (
                       <PersonalData
                         zone={zone}
-                        geo={geo}
                         isSubmitting={false}
                         form={form}
                         onContinue={() => void handleContinueFromPersonalData()}
@@ -283,8 +319,6 @@ export function BookingSteps({
                       <ZoneList
                         form={form}
                         zone={zone}
-                        geo={geo}
-                        error={zoneError}
                         checkoutError={checkoutError}
                         isSubmitting={false}
                         activeBooking={activeBooking}
@@ -315,12 +349,13 @@ export function BookingSteps({
                 />
               ) : null}
             </TabsContent>
-          ))}
+          ))
+          )}
         </Tabs>
       </section>
-      {showBookingSummary && zone ? (
-        <BookingSidebar zone={zone} geo={geo} form={form} />
-      ) : showBookingSummary ? (
+      {showBookingSummary && zone && !showLocationGate ? (
+        <BookingSidebar zone={zone} form={form} />
+      ) : showBookingSummary && !showLocationGate ? (
         <aside className="hidden lg:block lg:sticky lg:top-24">
           <BookingSummary zone={zone} form={form} />
         </aside>

@@ -1,8 +1,4 @@
-import { hasLocale } from "next-intl";
-import { setRequestLocale } from "next-intl/server";
-import { notFound } from "next/navigation";
 import { HomeLanding } from "@/components/home/home-landing";
-import { routing } from "@/i18n/routing";
 
 type HomePageProps = {
   params: Promise<{ locale: string }>;

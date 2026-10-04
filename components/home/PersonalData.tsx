@@ -18,14 +18,11 @@ import Image from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Button } from "../ui/button";
 import { Loader2 } from "lucide-react";
-import type { GeoStatus } from "@/lib/hooks/use-zone-geo-status";
 import { ParkingZone } from "@/lib/zones";
 import { ZoneCard } from "./zone-card";
-import { ZoneGeoNotice } from "./zone-panel";
 
 type PersonalDataProps = {
   zone: ParkingZone | null;
-  geo: GeoStatus;
   form: UseFormReturn<BookingInput>;
   isSubmitting: boolean;
   onContinue: () => void | Promise<void>;
@@ -35,7 +32,6 @@ const PersonalData = ({
   form,
   isSubmitting,
   zone,
-  geo,
   onContinue,
 }: PersonalDataProps) => {
   type Country = CountryCode;
@@ -78,11 +74,6 @@ const PersonalData = ({
   return (
     <div className="flex flex-col gap-4">
       {zone ? <ZoneCard zone={zone} /> : null}
-      {zone ? (
-        <div className="lg:hidden">
-          <ZoneGeoNotice geo={geo} />
-        </div>
-      ) : null}
 
       <FormField
         control={form.control}
@@ -98,8 +89,8 @@ const PersonalData = ({
             </div>
 
             {/* Plate layout matches the physical Saudi plate — always LTR */}
-            <div dir="ltr" className="w-full max-w-full">
-              <FormControl>
+            <div className="w-full flex justify-start max-w-full">
+              <FormControl dir="ltr">
                 <div className="flex w-fit overflow-hidden rounded-xl border-2 border-black dark:border-white">
                   {/* Main plate */}
                   <div className="grid md:w-90 w-full grid-cols-2 grid-rows-2">

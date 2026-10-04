@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { haversineMeters, locate, type GeoResult } from "@/lib/utils/geo";
 import type { ParkingZone } from "@/lib/zones";
@@ -44,21 +44,39 @@ function statusFrom(zone: ParkingZone | null, geo: GeoResult | null): GeoStatus 
   };
 }
 
-/** One GPS read on mount, compared to the zone geofence (informational only). */
-export function useZoneGeoStatus(zone: ParkingZone | null): GeoStatus {
-  const [geoResult, setGeoResult] = useState<GeoResult | null>(null);
+export type ZoneGeoStatus = GeoStatus & {
+  locating: boolean;
+  redetect: () => void;
+};
 
-  useEffect(() => {
-    let cancelled = false;
-    void locate().then((result) => {
-      if (!cancelled) {
-        setGeoResult(result);
+/** GPS read compared to the zone geofence. `redetect` asks for a fresh position. */
+export function useZoneGeoStatus(zone: ParkingZone | null): ZoneGeoStatus {
+  const [geoResult, setGeoResult] = useState<GeoResult | null>(null);
+  const [locating, setLocating] = useState(true);
+  const requestRef = useRef(0);
+
+  const readLocation = useCallback((maximumAge = 30_000) => {
+    const requestId = ++requestRef.current;
+    setLocating(true);
+    void locate(12_000, maximumAge).then((result) => {
+      if (requestId !== requestRef.current) {
+        return;
       }
+      setGeoResult(result);
+      setLocating(false);
     });
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
-  return statusFrom(zone, geoResult);
+  useEffect(() => {
+    readLocation();
+    return () => {
+      requestRef.current += 1;
+    };
+  }, [readLocation]);
+
+  return {
+    ...statusFrom(zone, geoResult),
+    locating,
+    redetect: () => readLocation(0),
+  };
 }
