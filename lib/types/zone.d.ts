@@ -30,6 +30,7 @@ export type BookingQuoteResponse = {
   total?: number;
   detail?: string;
   checkout_id?: string;
+  provider?: string;
   redirect_url?: string;
   shopper_result_url?: string;
   [key: string]: unknown;

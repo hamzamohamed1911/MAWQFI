@@ -176,10 +176,17 @@ export function BookingSteps({
       }
 
       const checkout = checkoutResult.data;
+      const redirectUrl = checkout.redirect_url?.trim() ?? "";
+
+      // Tap charges off-site and returns through shopper_result_url.
+      if (checkout.provider !== "stub" && redirectUrl) {
+        return { checkout, confirmed: null, redirectUrl };
+      }
+
       const checkoutId = checkout.checkout_id?.trim();
 
       if (!checkoutId) {
-        return { checkout, confirmed: null };
+        return { checkout, confirmed: null, redirectUrl: "" };
       }
 
       const confirmResult = await confirmBooking(checkoutId);
@@ -187,7 +194,7 @@ export function BookingSteps({
         throw confirmResult.error;
       }
 
-      return { checkout, confirmed: confirmResult.data };
+      return { checkout, confirmed: confirmResult.data, redirectUrl: "" };
     },
 
     onMutate: () => {
@@ -195,12 +202,11 @@ export function BookingSteps({
       setCheckoutError(null);
     },
 
-    onSuccess: ({ checkout, confirmed }) => {
+    onSuccess: ({ checkout, confirmed, redirectUrl }) => {
       setCheckoutResult(checkout);
       setConfirmResult(confirmed);
 
-      const redirectUrl = checkout.redirect_url?.trim();
-      if (redirectUrl && typeof window !== "undefined") {
+      if (redirectUrl) {
         window.location.assign(redirectUrl);
         return;
       }
@@ -231,10 +237,12 @@ export function BookingSteps({
 
   const handlePay = () => {
     void form.handleSubmit((values) => {
+      const shopperResultUrl = `${window.location.origin}/api/tap/return?zone=${encodeURIComponent(values.zone)}`;
+
       registerMutation.mutate({
         ...values,
         plate: normalizePlateValue(values.plate),
-        shopper_result_url: `${process.env.NEXT_PUBLIC_API_URL}/${locale}/payment/result`,
+        shopper_result_url: shopperResultUrl,
       });
     })();
   };
