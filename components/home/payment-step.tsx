@@ -28,7 +28,6 @@ type PaymentStepProps = {
   activeBooking: ActiveBooking | null;
   checkoutResult: BookingQuoteResponse | null;
   confirmResult: ConfirmBookingResponse | null;
-  activeBookingError?: unknown;
   onExtend: () => void;
 };
 
@@ -44,7 +43,6 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }) {
 export function PaymentStep({
   activeBooking,
   confirmResult,
-  activeBookingError,
   onExtend,
 }: PaymentStepProps) {
   const t = useTranslations("HomePage");
@@ -76,25 +74,6 @@ export function PaymentStep({
       remainingJoin: t("remainingJoin"),
     });
     return t("timeRemainingDuration", { duration: formatted });
-  })();
-
-  const activeBookingErrorMessage = (() => {
-    if (activeBookingError == null) {
-      return null;
-    }
-    if (typeof activeBookingError === "string") {
-      return activeBookingError.length > 0 ? activeBookingError : null;
-    }
-    if (
-      typeof activeBookingError === "object" &&
-      "detail" in activeBookingError
-    ) {
-      const detail = (activeBookingError as { detail: unknown }).detail;
-      if (typeof detail === "string" && detail.length > 0) {
-        return detail;
-      }
-    }
-    return JSON.stringify(activeBookingError);
   })();
 
   async function handleCopyBookingNumber() {
@@ -170,9 +149,6 @@ export function PaymentStep({
         <p className="text-sm font-medium text-destructive" role="alert">
           {printError}
         </p>
-      ) : null}
-      {activeBookingErrorMessage ? (
-        <Alert variant="destructive">{activeBookingErrorMessage}</Alert>
       ) : null}
 
       <div className="flex flex-col items-center gap-2 pt-2 text-center">
