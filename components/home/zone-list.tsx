@@ -13,7 +13,9 @@ import { BookingInput } from "@/lib/schemas/booking.schema";
 import { UseFormReturn } from "react-hook-form";
 import { getLocaleDirection } from "@/i18n/routing";
 import type { ActiveBooking } from "@/lib/types/zone";
+import type { GeoStatus } from "@/lib/hooks/use-zone-geo-status";
 import { cn } from "@/lib/utils/cn";
+import { ZoneGeoNotice } from "@/components/home/zone-panel";
 
 const MIN_SLOT_HOURS = 1;
 const HOUR_SLOTS = Array.from(
@@ -23,6 +25,7 @@ const HOUR_SLOTS = Array.from(
 
 type ZoneListProps = {
   zone: ParkingZone | null;
+  geo: GeoStatus;
   error?: string | null;
   checkoutError?: string | null;
   form: UseFormReturn<BookingInput>;
@@ -35,6 +38,7 @@ type ZoneListProps = {
 
 export function ZoneList({
   zone,
+  geo,
   error,
 
   form,
@@ -101,6 +105,11 @@ export function ZoneList({
 
   return (
     <div>
+      {zone ? (
+        <div className="mb-4 lg:hidden">
+          <ZoneGeoNotice geo={geo} />
+        </div>
+      ) : null}
       {error ? <p className="mt-4 text-xs text-destructive">{error}</p> : null}
 
       <div className="mt-4 flex w-full flex-col gap-4">

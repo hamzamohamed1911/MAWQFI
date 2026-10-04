@@ -37,8 +37,10 @@ import type {
 } from "@/lib/types/zone";
 import { BookingStepNav } from "./booking-step-nav";
 import { BookingSummary } from "./booking-summary";
+import { BookingSidebar } from "./booking-sidebar";
 import { PaymentReviewStep } from "./payment-review-step";
 import { PaymentStep } from "./payment-step";
+import { useZoneGeoStatus } from "@/lib/hooks/use-zone-geo-status";
 
 type BookingStepsProps = {
   zone: ParkingZone | null;
@@ -238,6 +240,7 @@ export function BookingSteps({
   };
 
   const showBookingSummary = step === "1" || step === "2";
+  const geo = useZoneGeoStatus(zone);
 
   return (
     <div
@@ -263,6 +266,7 @@ export function BookingSteps({
                     {value === "1" ? (
                       <PersonalData
                         zone={zone}
+                        geo={geo}
                         isSubmitting={false}
                         form={form}
                         onContinue={() => void handleContinueFromPersonalData()}
@@ -271,6 +275,7 @@ export function BookingSteps({
                       <ZoneList
                         form={form}
                         zone={zone}
+                        geo={geo}
                         error={zoneError}
                         checkoutError={checkoutError}
                         isSubmitting={false}
@@ -306,7 +311,13 @@ export function BookingSteps({
           ))}
         </Tabs>
       </section>
-      {showBookingSummary ? <BookingSummary zone={zone} form={form} /> : null}
+      {showBookingSummary && zone ? (
+        <BookingSidebar zone={zone} geo={geo} form={form} />
+      ) : showBookingSummary ? (
+        <aside className="hidden lg:block lg:sticky lg:top-24">
+          <BookingSummary zone={zone} form={form} />
+        </aside>
+      ) : null}
     </div>
   );
 }
