@@ -37,21 +37,33 @@ export async function generateMetadata({
 
 type BookingPageProps = {
   params: Promise<{ locale: string; qr: string }>;
-  searchParams: Promise<{ plate?: string }>;
+  searchParams: Promise<{
+    plate?: string;
+    zone?: string;
+    step?: string;
+    hours?: string;
+  }>;
 };
 
 export default async function BookingPage({
   params,
   searchParams,
 }: BookingPageProps) {
-  const { qr } = await params;
-  const { plate } = await searchParams;
+  const { locale, qr } = await params;
+  const { plate, zone, step, hours } = await searchParams;
 
   return (
     <main className="relative flex flex-1 flex-col px-4  pb-8 pt-4">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
         <BackToScan />
-        <BookingPanel qrId={qr} plate={plate} />
+        <BookingPanel
+          qrId={qr}
+          locale={locale}
+          plate={plate}
+          zoneParam={zone}
+          step={step}
+          hours={hours}
+        />
       </div>
     </main>
   );

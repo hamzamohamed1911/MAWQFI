@@ -252,11 +252,17 @@ export function BookingSteps({
 
   const handlePay = () => {
     void form.handleSubmit((values) => {
-      const shopperResultUrl = `${window.location.origin}/api/tap/return?zone=${encodeURIComponent(values.zone)}`;
+      const plate = normalizePlateValue(values.plate);
+      const returnParams = new URLSearchParams({
+        step: "4",
+        plate,
+        zone: String(values.zone),
+      });
+      const shopperResultUrl = `${window.location.origin}${window.location.pathname}?${returnParams.toString()}`;
 
       registerMutation.mutate({
         ...values,
-        plate: normalizePlateValue(values.plate),
+        plate,
         shopper_result_url: shopperResultUrl,
       });
     })();
