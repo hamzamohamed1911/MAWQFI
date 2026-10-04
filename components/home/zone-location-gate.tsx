@@ -8,6 +8,29 @@ import { Button } from "@/components/ui/button";
 import type { GeoStatus } from "@/lib/hooks/use-zone-geo-status";
 import { formatDistanceMeters } from "@/lib/utils/format-distance";
 
+export function LocationCheckingState() {
+  const t = useTranslations("HomePage");
+
+  return (
+    <div
+      role="status"
+      className="mx-auto flex w-full max-w-md flex-col items-center px-2 py-10 text-center"
+    >
+      <img
+        src="/images/Locationsearch.svg"
+        alt=""
+        width={235}
+        height={230}
+        className="h-auto w-52 animate-pulse sm:w-60"
+      />
+      <p className="mt-6 flex items-center gap-2 text-sm font-semibold text-foreground">
+        <Loader2 className="size-4 animate-spin" aria-hidden />
+        {t("geoChecking")}
+      </p>
+    </div>
+  );
+}
+
 type LocationPermissionNoticeProps = {
   locating: boolean;
   onRetry: () => void;

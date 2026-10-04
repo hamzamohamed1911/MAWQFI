@@ -20,6 +20,11 @@ function zoneCenter(zone: ParkingZone | null): { latitude: number; longitude: nu
   return { latitude, longitude };
 }
 
+/** True when the zone has a center and radius, so being outside it can be detected. */
+export function zoneHasGeofence(zone: ParkingZone | null): boolean {
+  return zoneCenter(zone) !== null && (zone?.geofence_radius_m ?? 0) > 0;
+}
+
 function statusFrom(zone: ParkingZone | null, geo: GeoResult | null): GeoStatus {
   if (!geo) {
     return { state: "pending", distanceM: null, inside: null };

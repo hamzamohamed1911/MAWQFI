@@ -41,10 +41,14 @@ import { BookingSidebar } from "./booking-sidebar";
 import { PaymentReviewStep } from "./payment-review-step";
 import { PaymentStep } from "./payment-step";
 import {
+  LocationCheckingState,
   LocationPermissionNotice,
   ZoneLocationGate,
 } from "./zone-location-gate";
-import { useZoneGeoStatus } from "@/lib/hooks/use-zone-geo-status";
+import {
+  useZoneGeoStatus,
+  zoneHasGeofence,
+} from "@/lib/hooks/use-zone-geo-status";
 import {
   NotFoundView,
   notFoundHomeButtonClassName,
@@ -261,8 +265,11 @@ export function BookingSteps({
   const showBookingSummary = step === "1" || step === "2";
   const geo = useZoneGeoStatus(zone);
   const [locationConfirmed, setLocationConfirmed] = useState(false);
-  const showLocationGate =
-    step === "1" && !locationConfirmed && geo.inside === false;
+  const gateActive = step === "1" && !locationConfirmed;
+  const checkingLocation =
+    gateActive && zoneHasGeofence(zone) && geo.state === "pending";
+  const showLocationGate = gateActive && geo.inside === false;
+  const hideBookingForm = checkingLocation || showLocationGate;
 
   if (zoneError) {
     return (
@@ -285,7 +292,7 @@ export function BookingSteps({
       className={cn(
         "grid gap-6 lg:items-start",
         showBookingSummary &&
-          !showLocationGate &&
+          !hideBookingForm &&
           "lg:grid-cols-[minmax(0,1fr)_20rem]",
       )}
     >
@@ -298,14 +305,16 @@ export function BookingSteps({
         >
           <BookingStepNav step={step} />
 
-          {showBookingSummary && !showLocationGate && geo.state === "failed" ? (
+          {showBookingSummary && !hideBookingForm && geo.state === "failed" ? (
             <LocationPermissionNotice
               locating={geo.locating}
               onRetry={geo.redetect}
             />
           ) : null}
 
-          {showLocationGate ? (
+          {checkingLocation ? (
+            <LocationCheckingState />
+          ) : showLocationGate ? (
             <ZoneLocationGate
               geo={geo}
               locating={geo.locating}
@@ -363,9 +372,9 @@ export function BookingSteps({
           )}
         </Tabs>
       </section>
-      {showBookingSummary && zone && !showLocationGate ? (
+      {showBookingSummary && zone && !hideBookingForm ? (
         <BookingSidebar zone={zone} form={form} />
-      ) : showBookingSummary && !showLocationGate ? (
+      ) : showBookingSummary && !hideBookingForm ? (
         <aside className="hidden lg:block lg:sticky lg:top-24">
           <BookingSummary zone={zone} form={form} />
         </aside>
