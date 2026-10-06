@@ -18,7 +18,10 @@ type ViewInvoiceButtonProps = {
 };
 
 /** Prints the API bill, falling back to a locally rendered receipt. */
-export function ViewInvoiceButton({ booking, payment }: ViewInvoiceButtonProps) {
+export function ViewInvoiceButton({
+  booking,
+  payment,
+}: ViewInvoiceButtonProps) {
   const t = useTranslations("HomePage");
   const locale = useLocale();
   const [isPrinting, setIsPrinting] = useState(false);
@@ -73,7 +76,7 @@ export function ViewInvoiceButton({ booking, payment }: ViewInvoiceButtonProps) 
       <Button
         type="button"
         variant="link"
-        className="h-auto gap-2 p-0 text-base font-semibold text-secondary-800"
+        className="h-auto gap-2 p-0 text-base font-semibold text-secondary-800 dark:text-secondary-200"
         disabled={!booking || isPrinting}
         onClick={() => void handleViewInvoice()}
       >

@@ -23,6 +23,12 @@ import { formatRemainingDuration } from "@/lib/utils/format-remaining";
 import { formatDateTime } from "@/lib/utils/formatDateTime";
 import { cn } from "@/lib/utils/cn";
 
+type TapReturnState =
+  | { status: "idle" }
+  | { status: "pending" }
+  | { status: "ok"; booking: ActiveBooking; payment: PaymentResult }
+  | { status: "failed"; hours: number | null };
+
 type PaymentStepProps = {
   activeBooking: ActiveBooking | null;
   checkoutResult: BookingQuoteResponse | null;
@@ -54,7 +60,9 @@ function DetailRow({
         className,
       )}
     >
-      <span className={cn("text-muted-foreground", labelClassName)}>{label}</span>
+      <span className={cn("text-muted-foreground", labelClassName)}>
+        {label}
+      </span>
       <span className="text-end font-semibold text-foreground">{value}</span>
     </div>
   );
@@ -78,11 +86,9 @@ export function PaymentStep({
   const isTapReturn = checkout.length > 0 && tap.length > 0;
 
   const sentReturnKey = useRef<string | null>(null);
-  const [returnBooking, setReturnBooking] = useState<ActiveBooking | null>(null);
-  const [returnPayment, setReturnPayment] = useState<PaymentResult | undefined>();
-  const [returnPending, setReturnPending] = useState(isTapReturn);
-  const [returnFailed, setReturnFailed] = useState(false);
-  const [requestHours, setRequestHours] = useState<number | null>(null);
+  const [tapReturn, setTapReturn] = useState<TapReturnState>(
+    isTapReturn ? { status: "pending" } : { status: "idle" },
+  );
 
   useEffect(() => {
     if (!isTapReturn) {
@@ -99,30 +105,32 @@ export function PaymentStep({
       checkout_id: checkout,
       tap_id: tap,
     }).then((result) => {
-      console.log(result);
       if (result.ok) {
-        setReturnBooking(result.data.booking);
-        setReturnPayment(result.data.payment);
-        setReturnFailed(false);
-      } else {
-        setReturnFailed(true);
+        setTapReturn({
+          status: "ok",
+          booking: result.data.booking,
+          payment: result.data.payment,
+        });
+        return;
       }
-      setReturnPending(false);
+
+      const hours = readStoredCheckout()?.booking.hours;
+      setTapReturn({
+        status: "failed",
+        hours: typeof hours === "number" && hours > 0 ? hours : null,
+      });
     });
   }, [checkout, isTapReturn, tap]);
 
-  useEffect(() => {
-    const hours = readStoredCheckout()?.booking.hours;
-    if (typeof hours === "number" && hours > 0) {
-      setRequestHours(hours);
-    }
-  }, []);
-
   const locale = useLocale();
-  const booking = isTapReturn
-    ? returnBooking
-    : (confirmResult?.booking ?? activeBooking);
-  const payment = isTapReturn ? returnPayment : confirmResult?.payment;
+  const booking =
+    tapReturn.status === "ok"
+      ? tapReturn.booking
+      : isTapReturn
+        ? null
+        : (confirmResult?.booking ?? activeBooking);
+  const payment =
+    tapReturn.status === "ok" ? tapReturn.payment : confirmResult?.payment;
 
   const expiresAt = booking?.expires_at;
   const targetMs = useMemo(
@@ -168,7 +176,7 @@ export function PaymentStep({
         })
       : (booking?.site_name ?? booking?.zone_name ?? "—");
 
-  if (isTapReturn && returnPending) {
+  if (tapReturn.status === "pending") {
     return (
       <div className="mx-auto flex w-full max-w-lg justify-center py-16">
         <Loader2 className="size-8 animate-spin text-primary-600" aria-hidden />
@@ -176,16 +184,15 @@ export function PaymentStep({
     );
   }
 
-  if (returnFailed) {
+  if (tapReturn.status === "failed") {
     const requestLocation =
       zone?.site_name && zone?.name
         ? t("locationZoneLine", { site: zone.site_name, zone: zone.name })
         : (zone?.site_name ?? zone?.name ?? "—");
     const plate = requestPlate?.trim() || "—";
-    const duration =
-      requestHours && requestHours > 0
-        ? t("paymentFailedDuration", { count: requestHours * 60 })
-        : "—";
+    const duration = tapReturn.hours
+      ? t("paymentFailedDuration", { count: tapReturn.hours * 60 })
+      : "—";
 
     return (
       <div className="mx-auto flex w-full max-w-lg flex-col gap-5">
