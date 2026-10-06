@@ -48,3 +48,9 @@ export type ConfirmBookingResponse = {
   booking: ActiveBooking;
   payment: PaymentResult;
 };
+
+/** Body returned when Tap redirects back to checkout. */
+export type CheckoutReturnResponse = {
+  booking: ActiveBooking;
+  payment: PaymentResult;
+};

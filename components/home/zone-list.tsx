@@ -5,7 +5,11 @@ import { parseAsInteger, useQueryState } from "nuqs";
 import { useEffect } from "react";
 import type { ParkingZone } from "@/lib/zones";
 
-import { MAX_CUSTOM_HOURS } from "@/components/home/custom-time-picker";
+import {
+  CustomTimePicker,
+  MAX_CUSTOM_HOURS,
+  MIN_CUSTOM_HOURS,
+} from "@/components/home/custom-time-picker";
 import { ActiveBookingCountdown } from "@/components/home/active-booking-countdown";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -16,10 +20,7 @@ import type { ActiveBooking } from "@/lib/types/zone";
 import { cn } from "@/lib/utils/cn";
 
 const MIN_SLOT_HOURS = 1;
-const HOUR_SLOTS = Array.from(
-  { length: MAX_CUSTOM_HOURS },
-  (_, index) => index + MIN_SLOT_HOURS,
-);
+const QUICK_HOURS = [1, 2] as const;
 
 type ZoneListProps = {
   zone: ParkingZone | null;
@@ -141,9 +142,9 @@ export function ZoneList({
               role="radiogroup"
               aria-label={t("select-time-slot")}
               dir={dir}
-              className="grid w-full grid-cols-4 gap-2 sm:gap-3"
+              className="grid w-full grid-cols-3 gap-2 sm:gap-3"
             >
-              {HOUR_SLOTS.map((slot) => {
+              {QUICK_HOURS.map((slot) => {
                 const isSelected = selectedHours === slot;
 
                 return (
@@ -157,7 +158,7 @@ export function ZoneList({
                       "h-12 w-full min-w-0 rounded-xl border text-base font-semibold shadow-none sm:h-14 sm:text-lg",
                       isSelected
                         ? "border-primary-500 bg-primary-500 text-white hover:bg-primary-600 hover:text-white dark:border-primary-400 dark:bg-primary-500 dark:text-primary-foreground dark:hover:bg-primary-400 dark:hover:text-primary-foreground"
-                        : "border-border bg-background text-foreground hover:bg-muted dark:border-primary-800/60 dark:bg-primary-950/35 dark:text-primary-100 dark:hover:bg-primary-900/45",
+                        : "border-border bg-background text-foreground hover:bg-muted dark:border-primary-800/60 dark:bg-primary-900/40 dark:text-primary-100 dark:hover:bg-primary-900/45",
                     )}
                     onClick={() => setHoursValue(slot)}
                   >
@@ -165,11 +166,37 @@ export function ZoneList({
                   </Button>
                 );
               })}
+              <Button
+                type="button"
+                role="radio"
+                aria-checked={selectedHours >= MIN_CUSTOM_HOURS}
+                variant="outline"
+                className={cn(
+                  "h-12 w-full min-w-0 rounded-xl border text-base font-semibold shadow-none sm:h-14 sm:text-lg",
+                  selectedHours >= MIN_CUSTOM_HOURS
+                    ? "border-primary-500 bg-primary-500 text-white hover:bg-primary-600 hover:text-white dark:border-primary-400 dark:bg-primary-500 dark:text-primary-foreground dark:hover:bg-primary-400 dark:hover:text-primary-foreground"
+                    : "border-border bg-background text-foreground hover:bg-muted dark:border-primary-800/60 dark:bg-primary-900/40 dark:text-primary-100 dark:hover:bg-primary-900/45",
+                )}
+                onClick={() => {
+                  if (selectedHours < MIN_CUSTOM_HOURS) {
+                    setHoursValue(MIN_CUSTOM_HOURS);
+                  }
+                }}
+              >
+                {t("moreHours")}
+              </Button>
             </div>
 
-            <p className="mt-3 text-center text-xs text-muted-foreground">
-              {t("maxTimeSelection")}
-            </p>
+            {selectedHours >= MIN_CUSTOM_HOURS ? (
+              <CustomTimePicker
+                hours={selectedHours}
+                onHoursChange={setHoursValue}
+              />
+            ) : (
+              <p className="mt-3 text-center text-xs text-muted-foreground">
+                {t("maxTimeSelection", { count: MAX_CUSTOM_HOURS })}
+              </p>
+            )}
           </div>
 
           {form.formState.errors.hours ? (

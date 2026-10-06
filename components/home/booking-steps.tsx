@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
+import { parseAsString, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
 import { ZoneList } from "@/components/home/zone-list";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,6 +30,10 @@ import {
 } from "@/lib/schemas/booking.schema";
 import { parseCheckoutError } from "@/lib/api/booking-errors";
 import { confirmBooking, submitBooking } from "@/lib/api/zones";
+import {
+  readStoredCheckout,
+  storeCheckout,
+} from "@/lib/booking-checkout-session";
 import type {
   ActiveBooking,
   BookingQuoteResponse,
@@ -60,6 +64,8 @@ type BookingStepsProps = {
   zoneError?: string | null;
   activeBooking?: ActiveBooking | null;
   activeBookingError?: string | null;
+  checkoutId?: string;
+  tapId?: string;
 };
 
 export function BookingSteps({
@@ -67,6 +73,8 @@ export function BookingSteps({
   zoneError,
   activeBooking = null,
   activeBookingError = null,
+  checkoutId,
+  tapId,
 }: BookingStepsProps) {
   const t = useTranslations("HomePage");
   const tHeader = useTranslations("Header");
@@ -83,30 +91,13 @@ export function BookingSteps({
   const [confirmResult, setConfirmResult] =
     useState<ConfirmBookingResponse | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [step, setStep] = useQueryState(
-    "step",
-    parseAsStringLiteral(BOOKING_STEPS)
-      .withDefault(DEFAULT_BOOKING_STEP)
-      .withOptions({
-        clearOnDefault: false,
-        history: "replace",
-      }),
+  const isTapReturn = Boolean(checkoutId?.trim() && tapId?.trim());
+  const [step, setStep] = useState<BookingStep>(
+    isTapReturn ? "4" : DEFAULT_BOOKING_STEP,
   );
 
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const current = new URLSearchParams(window.location.search).get("step");
-
-    if (!current) {
-      void setStep(DEFAULT_BOOKING_STEP);
-    }
-  }, [setStep]);
-
   function handleStepChange(value: string) {
-    void setStep(value as BookingStep);
+    setStep(value as BookingStep);
   }
   const schema = createBookingSchema((key) => t(key as never));
   const form = useForm<BookingInput>({
@@ -175,6 +166,17 @@ export function BookingSteps({
     void setStep("2");
   };
 
+  const handleRetryPayment = () => {
+    const stored = readStoredCheckout()?.booking;
+    if (stored) {
+      form.reset({
+        ...bookingDefaultValues,
+        ...stored,
+      });
+    }
+    void setStep("3");
+  };
+
   const handleContinueFromDuration = async () => {
     const zoneValid = await form.trigger(["zone", "hours"]);
     if (!zoneValid) {
@@ -192,6 +194,7 @@ export function BookingSteps({
 
       const checkout = checkoutResult.data;
       const redirectUrl = checkout.redirect_url?.trim() ?? "";
+      storeCheckout({ booking: values });
 
       // Tap charges off-site and returns through shopper_result_url.
       if (checkout.provider !== "stub" && redirectUrl) {
@@ -254,7 +257,6 @@ export function BookingSteps({
     void form.handleSubmit((values) => {
       const plate = normalizePlateValue(values.plate);
       const returnParams = new URLSearchParams({
-        step: "4",
         plate,
         zone: String(values.zone),
       });
@@ -372,8 +374,13 @@ export function BookingSteps({
                     activeBooking={activeBooking}
                     checkoutResult={checkoutResult}
                     confirmResult={confirmResult}
+                    zone={zone}
+                    requestPlate={plateParam}
                     onExtend={handleExtendBooking}
                     onStartBooking={handleBackToPersonalData}
+                    onRetry={handleRetryPayment}
+                    checkoutId={checkoutId}
+                    tapId={tapId}
                   />
                 ) : null}
               </TabsContent>

@@ -11,6 +11,8 @@ type BookingPanelProps = {
   zoneParam?: string;
   step?: string;
   hours?: string;
+  checkoutId?: string;
+  tapId?: string;
 };
 
 export async function BookingPanel({
@@ -20,6 +22,8 @@ export async function BookingPanel({
   zoneParam,
   step,
   hours,
+  checkoutId,
+  tapId,
 }: BookingPanelProps) {
   const t = await getTranslations("HomePage");
   let zone = null;
@@ -36,12 +40,13 @@ export async function BookingPanel({
   const trimmedPlate = plate?.trim();
   const zoneId = zone?.id;
 
-  if (zone && zoneParam !== String(zone.id)) {
+  if (zone && (zoneParam !== String(zone.id) || step)) {
     const search = new URLSearchParams();
     search.set("zone", String(zone.id));
     if (trimmedPlate) search.set("plate", trimmedPlate);
-    if (step) search.set("step", step);
     if (hours) search.set("hours", hours);
+    if (checkoutId) search.set("checkout_id", checkoutId);
+    if (tapId) search.set("tap_id", tapId);
     redirect(`/${locale}/z/${encodeURIComponent(qrId)}?${search.toString()}`);
   }
 
@@ -62,6 +67,8 @@ export async function BookingPanel({
       zoneError={zoneError}
       activeBooking={activeBooking}
       activeBookingError={activeBookingError}
+      checkoutId={checkoutId}
+      tapId={tapId}
     />
   );
 }

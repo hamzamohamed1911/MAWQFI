@@ -7,7 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils/cn";
 
 export const MIN_CUSTOM_HOURS = 3;
-export const MAX_CUSTOM_HOURS = 8;
+export const MAX_CUSTOM_HOURS = 24;
 
 type CustomTimePickerProps = {
   hours: number;
@@ -32,7 +32,7 @@ export function CustomTimePicker({
       className={cn(
         "mt-4 w-full max-w-xl rounded-2xl p-5 shadow-sm md:p-6",
         "border-2 border-primary-200 ",
-        "dark:border-primary-800/60 dark:bg-primary-950/35",
+        "dark:border-primary-800/60 dark:bg-primary-900/40",
         className,
       )}
     >
@@ -56,7 +56,7 @@ export function CustomTimePicker({
             "text-primary-700/80 dark:text-primary-300/85",
           )}
         >
-          {t("maxTimeSelection")}
+          {t("maxTimeSelection", { count: MAX_CUSTOM_HOURS })}
         </p>
       </div>
 

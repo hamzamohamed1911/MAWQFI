@@ -12,6 +12,7 @@ import type {
   ActivateBookingErrorResponse,
   ActivateBookingResponse,
   BookingQuoteResponse,
+  CheckoutReturnResponse,
   ConfirmBookingResponse,
 } from "@/lib/types/zone";
 
@@ -45,6 +46,28 @@ export async function submitBooking(
     body: JSON.stringify(bookingBody),
   });
   const data = (await response.json()) as BookingQuoteResponse & ApiErrorBody;
+
+  if (!response.ok) {
+    return apiFailure(data);
+  }
+
+  return apiSuccess(data);
+}
+
+export async function submitBookingReturn(params: {
+  checkout_id: string;
+  tap_id: string;
+}): Promise<ApiActionResult<CheckoutReturnResponse>> {
+  const response = await fetch(`${getApiBaseUrl()}/public/bookings/confirm/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      checkout_id: params.checkout_id,
+      tap_id: params.tap_id,
+    }),
+  });
+  const data = (await response.json()) as CheckoutReturnResponse & ApiErrorBody;
+  console.log("data", data);
 
   if (!response.ok) {
     return apiFailure(data);

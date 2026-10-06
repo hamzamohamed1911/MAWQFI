@@ -42,6 +42,8 @@ type BookingPageProps = {
     zone?: string;
     step?: string;
     hours?: string;
+    checkout_id?: string;
+    tap_id?: string;
   }>;
 };
 
@@ -50,7 +52,7 @@ export default async function BookingPage({
   searchParams,
 }: BookingPageProps) {
   const { locale, qr } = await params;
-  const { plate, zone, step, hours } = await searchParams;
+  const { plate, zone, step, hours, checkout_id, tap_id } = await searchParams;
 
   return (
     <main className="relative flex flex-1 flex-col px-4  pb-8 pt-4">
@@ -63,6 +65,8 @@ export default async function BookingPage({
           zoneParam={zone}
           step={step}
           hours={hours}
+          checkoutId={checkout_id}
+          tapId={tap_id}
         />
       </div>
     </main>

@@ -1,19 +1,23 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { CalendarX, Copy } from "lucide-react";
+import { CalendarX, Copy, Info, Loader2, RefreshCw } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { submitBookingReturn } from "@/lib/api/zones";
+import { readStoredCheckout } from "@/lib/booking-checkout-session";
+import type { ParkingZone } from "@/lib/zones";
 import { ViewInvoiceButton } from "@/components/home/view-invoice-button";
 import { useNow } from "@/lib/hooks/use-now";
 import type {
   ActiveBooking,
   BookingQuoteResponse,
   ConfirmBookingResponse,
+  PaymentResult,
 } from "@/lib/types/zone";
 import { formatRemainingDuration } from "@/lib/utils/format-remaining";
 import { formatDateTime } from "@/lib/utils/formatDateTime";
@@ -23,14 +27,34 @@ type PaymentStepProps = {
   activeBooking: ActiveBooking | null;
   checkoutResult: BookingQuoteResponse | null;
   confirmResult: ConfirmBookingResponse | null;
+  zone?: ParkingZone | null;
+  requestPlate?: string | null;
   onExtend: () => void;
   onStartBooking: () => void;
+  onRetry?: () => void;
+  checkoutId?: string;
+  tapId?: string;
 };
 
-function DetailRow({ label, value }: { label: string; value: ReactNode }) {
+function DetailRow({
+  label,
+  value,
+  labelClassName,
+  className,
+}: {
+  label: string;
+  value: ReactNode;
+  labelClassName?: string;
+  className?: string;
+}) {
   return (
-    <div className="flex items-center justify-between gap-3  py-3 text-sm last:border-b-0">
-      <span className="text-muted-foreground">{label}</span>
+    <div
+      className={cn(
+        "flex items-center justify-between gap-3 py-3 text-sm last:border-b-0",
+        className,
+      )}
+    >
+      <span className={cn("text-muted-foreground", labelClassName)}>{label}</span>
       <span className="text-end font-semibold text-foreground">{value}</span>
     </div>
   );
@@ -39,13 +63,66 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }) {
 export function PaymentStep({
   activeBooking,
   confirmResult,
+  zone,
+  requestPlate,
   onExtend,
   onStartBooking,
+  onRetry,
+  checkoutId,
+  tapId,
 }: PaymentStepProps) {
   const t = useTranslations("HomePage");
+
+  const checkout = checkoutId?.trim() ?? "";
+  const tap = tapId?.trim() ?? "";
+  const isTapReturn = checkout.length > 0 && tap.length > 0;
+
+  const sentReturnKey = useRef<string | null>(null);
+  const [returnBooking, setReturnBooking] = useState<ActiveBooking | null>(null);
+  const [returnPayment, setReturnPayment] = useState<PaymentResult | undefined>();
+  const [returnPending, setReturnPending] = useState(isTapReturn);
+  const [returnFailed, setReturnFailed] = useState(false);
+  const [requestHours, setRequestHours] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isTapReturn) {
+      return;
+    }
+
+    const key = `${checkout}|${tap}`;
+    if (sentReturnKey.current === key) {
+      return;
+    }
+    sentReturnKey.current = key;
+
+    void submitBookingReturn({
+      checkout_id: checkout,
+      tap_id: tap,
+    }).then((result) => {
+      console.log(result);
+      if (result.ok) {
+        setReturnBooking(result.data.booking);
+        setReturnPayment(result.data.payment);
+        setReturnFailed(false);
+      } else {
+        setReturnFailed(true);
+      }
+      setReturnPending(false);
+    });
+  }, [checkout, isTapReturn, tap]);
+
+  useEffect(() => {
+    const hours = readStoredCheckout()?.booking.hours;
+    if (typeof hours === "number" && hours > 0) {
+      setRequestHours(hours);
+    }
+  }, []);
+
   const locale = useLocale();
-  const booking = confirmResult?.booking ?? activeBooking;
-  const payment = confirmResult?.payment;
+  const booking = isTapReturn
+    ? returnBooking
+    : (confirmResult?.booking ?? activeBooking);
+  const payment = isTapReturn ? returnPayment : confirmResult?.payment;
 
   const expiresAt = booking?.expires_at;
   const targetMs = useMemo(
@@ -90,6 +167,87 @@ export function PaymentStep({
           zone: booking.zone_name,
         })
       : (booking?.site_name ?? booking?.zone_name ?? "—");
+
+  if (isTapReturn && returnPending) {
+    return (
+      <div className="mx-auto flex w-full max-w-lg justify-center py-16">
+        <Loader2 className="size-8 animate-spin text-primary-600" aria-hidden />
+      </div>
+    );
+  }
+
+  if (returnFailed) {
+    const requestLocation =
+      zone?.site_name && zone?.name
+        ? t("locationZoneLine", { site: zone.site_name, zone: zone.name })
+        : (zone?.site_name ?? zone?.name ?? "—");
+    const plate = requestPlate?.trim() || "—";
+    const duration =
+      requestHours && requestHours > 0
+        ? t("paymentFailedDuration", { count: requestHours * 60 })
+        : "—";
+
+    return (
+      <div className="mx-auto flex w-full max-w-lg flex-col gap-5">
+        <div className="flex flex-col items-center gap-2 pt-2 text-center">
+          <Image
+            src="/images/failedPayment.svg"
+            alt={t("paymentFailedIllustrationAlt")}
+            width={168}
+            height={137}
+            priority
+            className="h-auto w-42"
+          />
+          <h2 className="text-2xl font-bold text-red-600 dark:text-red-400">
+            {t("paymentFailedTitle")}
+          </h2>
+          <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+            {t("paymentFailedHint")}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-center gap-2 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600 dark:bg-red-950/40 dark:text-red-300">
+          <Info className="size-4 shrink-0" aria-hidden />
+          <span>{t("paymentFailedBanner")}</span>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card px-4 py-4 sm:px-5">
+          <h3 className="text-start text-sm font-semibold text-primary-700 dark:text-primary-400">
+            {t("paymentFailedDetailsTitle")}
+          </h3>
+          <div className="mt-4 flex flex-col gap-4">
+            <DetailRow
+              label={t("paymentFailedPlate")}
+              value={plate}
+              className="py-0"
+              labelClassName="font-medium text-primary-700 dark:text-primary-400"
+            />
+            <DetailRow
+              label={t("paymentFailedLocation")}
+              value={requestLocation}
+              className="py-0"
+              labelClassName="font-medium text-primary-700 dark:text-primary-400"
+            />
+            <DetailRow
+              label={t("paymentFailedDurationLabel")}
+              value={duration}
+              className="py-0"
+              labelClassName="font-medium text-primary-700 dark:text-primary-400"
+            />
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          className="h-12 w-full rounded-full text-base font-semibold"
+          onClick={onRetry ?? onStartBooking}
+        >
+          {t("paymentFailedRetry")}
+          <RefreshCw className="size-4" aria-hidden />
+        </Button>
+      </div>
+    );
+  }
 
   if (!booking) {
     return (

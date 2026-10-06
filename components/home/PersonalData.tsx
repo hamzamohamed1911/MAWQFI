@@ -19,6 +19,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Button } from "../ui/button";
 import { Loader2 } from "lucide-react";
 import { ParkingZone } from "@/lib/zones";
+import {
+  sanitizePlateLetters,
+  toArabicPlateDigits,
+  toArabicPlateLetters,
+} from "@/lib/utils/saudi-plate";
 import { ZoneCard } from "./zone-card";
 
 type PersonalDataProps = {
@@ -53,14 +58,21 @@ const PersonalData = ({
       return;
     }
 
-    const match = plateValue.match(/^(\d*)([\p{L}]*)$/u);
+    const match = plateValue.match(/^(\d*)(.*)$/);
     if (!match) {
       return;
     }
 
-    setNumbers(match[1] ?? "");
-    setLetters(match[2] ?? "");
-  }, [plateValue]);
+    const nextNumbers = (match[1] ?? "").slice(0, 4);
+    const nextLetters = sanitizePlateLetters(match[2] ?? "");
+    setNumbers(nextNumbers);
+    setLetters(nextLetters);
+
+    const nextPlate = `${nextNumbers}${nextLetters}`;
+    if (nextPlate !== plateValue) {
+      form.setValue("plate", nextPlate, { shouldValidate: true });
+    }
+  }, [plateValue, form]);
 
   async function handleContinue() {
     setIsContinuing(true);
@@ -121,9 +133,7 @@ const PersonalData = ({
                       <Input
                         value={letters}
                         onChange={(e) => {
-                          const value = e.target.value
-                            .replace(/[^\p{L}]/gu, "")
-                            .toUpperCase();
+                          const value = sanitizePlateLetters(e.target.value);
 
                           setLetters(value);
 
@@ -141,12 +151,16 @@ const PersonalData = ({
 
                     {/* Numbers Result */}
                     <div className="flex items-center justify-center border-r-2 border-black dark:border-white lg:text-2xl md:text-xl text-lg text-gray-300">
-                      {numbers || "0000"}
+                      <span className={numbers ? "text-foreground" : undefined}>
+                        {numbers ? toArabicPlateDigits(numbers) : "٠٠٠٠"}
+                      </span>
                     </div>
 
-                    {/* Letters Result */}
+                    {/* Arabic match for the entered Latin letters */}
                     <div className="flex items-center justify-center lg:text-2xl md:text-xl text-lg text-gray-300">
-                      {letters || "AAA"}
+                      <span className={letters ? "text-foreground" : undefined}>
+                        {letters ? toArabicPlateLetters(letters) : "أ أ أ"}
+                      </span>
                     </div>
                   </div>
 
