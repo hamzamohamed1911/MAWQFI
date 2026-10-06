@@ -1,9 +1,11 @@
 "use client";
 
+import { DirectionProvider } from "@base-ui/react/direction-provider";
 import { Minus, Plus } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { getLocaleDirection } from "@/i18n/routing";
 import { cn } from "@/lib/utils/cn";
 
 export const MIN_CUSTOM_HOURS = 3;
@@ -21,6 +23,7 @@ export function CustomTimePicker({
   className,
 }: CustomTimePickerProps) {
   const t = useTranslations("HomePage");
+  const dir = getLocaleDirection(useLocale());
   const hoursLabel = hours === 1 ? t("hourUnit") : t("hoursUnit");
 
   const setClamped = (next: number) => {
@@ -89,20 +92,22 @@ export function CustomTimePicker({
             </span>
           </div>
 
-          <Slider
-            className="w-full"
-            min={MIN_CUSTOM_HOURS}
-            max={MAX_CUSTOM_HOURS}
-            step={1}
-            value={[hours]}
-            onValueChange={(values) => {
-              const next = Array.isArray(values) ? values[0] : values;
-              if (typeof next === "number") {
-                setClamped(next);
-              }
-            }}
-            aria-label={t("selectCustomTime")}
-          />
+          <DirectionProvider direction={dir}>
+            <Slider
+              className="w-full"
+              min={MIN_CUSTOM_HOURS}
+              max={MAX_CUSTOM_HOURS}
+              step={1}
+              value={[hours]}
+              onValueChange={(values) => {
+                const next = Array.isArray(values) ? values[0] : values;
+                if (typeof next === "number") {
+                  setClamped(next);
+                }
+              }}
+              aria-label={t("selectCustomTime")}
+            />
+          </DirectionProvider>
 
           <div
             className={cn(
