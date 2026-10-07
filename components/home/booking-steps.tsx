@@ -78,7 +78,7 @@ export function BookingSteps({
 }: BookingStepsProps) {
   const t = useTranslations("HomePage");
   const tHeader = useTranslations("Header");
-  const tNotFound = useTranslations("NotFound");
+  const tNotFound = useTranslations("HomePage");
   const locale = useLocale();
   const router = useRouter();
   const dir = getLocaleDirection(locale);

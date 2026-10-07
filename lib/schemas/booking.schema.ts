@@ -9,11 +9,7 @@ export const createBookingSchema = (t: TranslateFn) =>
     .object({
       zone: z.number().int().positive(t("validation-zone-required")),
 
-      plate: z
-        .string()
-        .trim()
-        .min(1, t("validation-plate-required"))
-        .refine(isValidSaudiPlate, t("validation-plate-invalid")),
+      plate: z.string().trim().min(1, t("validation-plate-required")),
 
       phone_country: z.string().min(1, t("validation-field-required")),
 

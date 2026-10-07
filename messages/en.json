@@ -178,7 +178,11 @@
     "minuteUnit": "minute",
     "minutesUnit": "minutes",
     "saudiArabiaAlt": "Saudi Arabia",
-    "Continue": "Continue"
+    "Continue": "Continue",
+    "backHome": "Back to home",
+    "saudiPlate": " Saudi Plate No.",
+    "other": "Other",
+    "plate-number-hint": "Enter the plate number from left to right using English letters and numbers, such as X Y Z 1 2 3 4"
   },
   "Header": {
     "logoAlt": "On Street Parking",
@@ -198,7 +202,6 @@
   "NotFound": {
     "code": "Error 404",
     "title": "Page not found",
-    "description": "The page you are looking for does not exist or may have been moved.",
-    "backHome": "Back to home"
+    "description": "The page you are looking for does not exist or may have been moved."
   }
 }
